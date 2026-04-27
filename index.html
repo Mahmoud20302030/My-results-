@@ -88,6 +88,10 @@
         .admin-tab.active-tab { display: block; animation: fadeInTab 0.4s ease-out forwards; }
         @keyframes fadeInTab { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Animation for results */
+        .fade-in-up { animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(20px); }
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
         @media (max-width: 900px) { 
             .dashboard-layout { grid-template-columns: 1fr; } 
             .header-controls { position: relative; justify-content: center; top: 0; right: 0; padding-left: 0; margin-bottom: 20px;}
@@ -136,11 +140,15 @@
 
         .system-locked { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(2, 6, 23, 0.95); z-index: 50; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--danger); backdrop-filter: blur(10px); display: none; text-align: center; padding: 20px;}
 
-        .analytics-bar { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px; background: rgba(0,0,0,0.4); padding: 20px; border-radius: 16px; border: 1px dashed var(--primary-glow); margin-bottom: 25px;}
-        .analytics-item { text-align: center; min-width: 120px;}
+        .analytics-bar { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px; background: rgba(0,0,0,0.4); padding: 20px; border-radius: 16px; border: 1px dashed var(--primary-glow); margin-bottom: 25px; position: relative; overflow: hidden;}
+        .analytics-item { text-align: center; min-width: 120px; z-index: 2;}
         .analytics-item h3 { color: var(--gold-bright); font-size: 26px; margin-bottom: 5px; font-weight: 900;}
         .analytics-item p { font-size: 13px; color: #94a3b8; font-weight: bold;}
         
+        /* Visual Pass/Fail Bar inside Analytics */
+        .visual-stat-bar { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: rgba(239, 68, 68, 0.3); display: flex;}
+        .visual-stat-fill { height: 100%; background: var(--success); transition: width 1s ease-in-out; }
+
         .live-preview-box { background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); padding: 10px 20px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;}
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(8px); z-index: 99999; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; }
@@ -291,7 +299,7 @@
                 <p id="displaySearchSub" style="color: var(--primary-glow); margin-bottom: 25px;">Smart Student Retrieval & Ranking</p>
                 
                 <div class="search-container">
-                    <input type="text" id="studentSearch" placeholder="أدخل رقم الجلوس أو اسم الطالب..." onkeypress="if(event.key === 'Enter') sys.search()">
+                    <input type="text" id="studentSearch" placeholder="أدخل رقم الجلوس أو اسم الطالب..." oninput="sys.debounceSearch()" onkeypress="if(event.key === 'Enter') sys.search()">
                 </div>
               
                 <button class="btn-prime" id="displaySearchBtn" style="width: 100%; max-width: 400px; font-size: 18px;" onclick="sys.search()">🔍 عرض الوثيقة المعتمدة</button>
@@ -329,6 +337,7 @@
 
                 <main class="glass-card">
                     <div class="analytics-bar" id="analyticsBar">
+                        <div class="visual-stat-bar"><div class="visual-stat-fill" id="statVisualFill" style="width: 0%;"></div></div>
                         <div class="analytics-item"><h3 id="statTotal">0</h3><p>إجمالي الطلاب</p></div>
                         <div class="analytics-item"><h3 id="statPass" style="color:var(--success);">0%</h3><p>نسبة النجاح العامة</p></div>
                         <div class="analytics-item"><h3 id="statAvg" style="color:var(--primary-glow);">0</h3><p>متوسط المجاميع</p></div>
@@ -549,7 +558,6 @@
     </div>
 
     <script>
-        // الرابط الجديد الذي طلبته لمعالجة المشكلة
         window.GLOBAL_SHEET_URL = "https://script.google.com/macros/s/AKfycbw35a0GX5WrbchrC1eDvY2ZBvjHkrDCS2tw5lsDGESVdsOT2qrPF3bIh-4E5fmlE0lk/exec";
         
         const sys = {
@@ -557,6 +565,8 @@
             dataIndex: new Map(),
             settings: {},
             syncTimeout: null,
+            searchTimeout: null, // For real-time search debounce
+            lastSyncTime: null,  // Track last sync time
             
             init() {
                 let savedSettings = {};
@@ -565,7 +575,6 @@
                     if (stored) savedSettings = JSON.parse(stored);
                 } catch(e) {}
 
-                // تثبيت الهوية الافتراضية ببيانات قوية لمنع الفراغ وتسهيل التعديل
                 const defaultInst = {
                     gov: (savedSettings.inst && savedSettings.inst.gov) ? savedSettings.inst.gov : 'محافظة الدقهلية',
                     dir: (savedSettings.inst && savedSettings.inst.dir) ? savedSettings.inst.dir : 'مديرية التربية والتعليم بالدقهلية',
@@ -606,7 +615,6 @@
                 this.updateLockUI();
                 this.renderDynamicSubjects();
 
-                // الاستدعاء السحابي الآمن جداً
                 if (this.settings.sheetUrl && this.settings.sheetUrl.indexOf("script.google.com") !== -1) {
                     this.pullFromCloud(true);
                 } else {
@@ -614,7 +622,6 @@
                 }
             },
 
-            // كبسولة الاتصال السحابي (تم إصلاح العطل ومنع التجميد تماماً)
             async pullFromCloud(isInitialLoad = false, showMsg = false) {
                 const searchBtn = document.getElementById('displaySearchBtn');
                 const statusInd = document.getElementById('dbStatusIndicator');
@@ -636,13 +643,10 @@
                         statusInd.style.color = 'var(--gold-bright)';
                     }
 
-                    // تقليل وقت الانتظار إلى 8 ثواني لعدم تعطيل النظام على المستخدم
                     const controller = window.AbortController ? new AbortController() : null;
                     const signal = controller ? controller.signal : undefined;
                     let timeoutId;
-                    if (controller) {
-                        timeoutId = setTimeout(() => { controller.abort(); }, 8000); 
-                    }
+                    if (controller) { timeoutId = setTimeout(() => { controller.abort(); }, 8000); }
                     
                     const response = await fetch(url + "?t=" + new Date().getTime(), { signal: signal });
                     if (timeoutId) clearTimeout(timeoutId);
@@ -662,7 +666,6 @@
                             const keys = ['inst', 'titles', 'subjects', 'logo', 'signature', 'locked'];
                             for (let i = 0; i < keys.length; i++) {
                                 let k = keys[i];
-                                // حماية البيانات الافتراضية من المسح إذا كانت السحابة فارغة
                                 if(cloudSettings[k] !== undefined && Object.keys(cloudSettings[k]).length !== 0) {
                                     this.settings[k] = cloudSettings[k];
                                 }
@@ -680,6 +683,7 @@
                         this.updateRankings();
                         this.saveData(); 
                         this.renderTable();
+                        this.lastSyncTime = new Date();
                         this.updateReadyIndicator();
 
                         if(ind) { ind.innerText = `الربط السحابي: متصل نشط ✓`; ind.style.color = 'var(--success)'; }
@@ -690,10 +694,7 @@
                 } catch(e) {
                     console.warn("Cloud Fetch Failed, falling back to local storage.", e);
                     if(ind) { ind.innerText = 'يعمل بالنسخة المحلية (السيرفر لا يستجيب)'; ind.style.color = 'var(--danger)'; }
-                    
-                    this.fallbackToLocal(); // تفعيل النسخة المحلية فوراً
-                    
-                    // تحديث واجهة المستخدم فوراً لعدم إرباك الزائر
+                    this.fallbackToLocal(); 
                     if(statusInd) {
                         statusInd.innerHTML = '⚠️ تعذر الاتصال بالسحابة. النظام متاح الآن عبر النسخة المحلية.';
                         statusInd.style.background = 'rgba(239, 68, 68, 0.1)';
@@ -702,7 +703,6 @@
                     }
                     if(showMsg) this.msg('تعذر الاتصال بالسيرفر، تم فك القفل وتحميل النسخة المحلية.', 'var(--danger)');
                 } finally {
-                    // فك القفل عن زر البحث بشكل إجباري ومؤكد في جميع الحالات
                     if(searchBtn) { 
                         let btnText = (this.settings.titles && this.settings.titles.searchBtnText) ? this.settings.titles.searchBtnText : 'عرض الوثيقة المعتمدة';
                         searchBtn.innerHTML = `🔍 ${btnText}`; 
@@ -727,7 +727,6 @@
                 this.updateReadyIndicator();
             },
 
-            // إنشاء فهرس سريع للبحث ليتحمل آلاف الطلاب بلا بطء
             buildIndex() {
                 this.dataIndex.clear();
                 for (let i = 0; i < this.data.length; i++) {
@@ -739,8 +738,9 @@
             updateReadyIndicator() {
                 const statusInd = document.getElementById('dbStatusIndicator');
                 if(statusInd) {
+                    const timeStr = this.lastSyncTime ? ` | آخر تحديث: ${this.lastSyncTime.toLocaleTimeString('ar-EG')}` : '';
                     if (this.data.length > 0) {
-                        statusInd.innerHTML = `🟢 النظام جاهز للبحث: <span style="color:var(--gold-bright); font-size:16px;">${this.data.length}</span> طالب مسجل`;
+                        statusInd.innerHTML = `🟢 النظام جاهز للبحث: <span style="color:var(--gold-bright); font-size:16px;">${this.data.length}</span> طالب مسجل ${timeStr}`;
                         statusInd.style.background = 'rgba(16, 185, 129, 0.1)';
                         statusInd.style.borderColor = 'rgba(16, 185, 129, 0.3)';
                         statusInd.style.color = 'var(--success)';
@@ -753,7 +753,6 @@
                 }
             },
 
-            // دالة المزامنة الصامتة الخفية للإدارة (مضادة للـ CORS)
             async autoSync(payload) {
                 let url = this.settings.sheetUrl || window.GLOBAL_SHEET_URL;
                 if(!url) return;
@@ -768,30 +767,52 @@
                         body: JSON.stringify({ source: "SovereignSystem", timestamp: new Date().toISOString(), data: payload, settings: this.settings })
                     }).then(() => {
                         if(ind) { ind.innerText = 'تم الحفظ والمزامنة بالسحابة ✓'; ind.style.color = 'var(--success)'; }
+                        this.lastSyncTime = new Date();
+                        this.updateReadyIndicator();
                     }).catch(e => {
                         if(ind) { ind.innerText = 'تم الحفظ محلياً فقط'; ind.style.color = 'var(--danger)'; }
                     });
                 } catch(e) {}
             },
 
-            search() {
+            // Real-time search debounce function
+            debounceSearch() {
+                clearTimeout(this.searchTimeout);
+                const qInput = document.getElementById('studentSearch');
+                const r = document.getElementById('quickResult');
+                
+                if (!qInput || qInput.value.trim() === '') {
+                    if (r) r.innerHTML = '';
+                    return;
+                }
+                this.searchTimeout = setTimeout(() => { this.search(true); }, 400); // 400ms delay for smooth typing
+            },
+
+            search(isLiveSearch = false) {
                 if(this.settings.locked) return this.msg('النظام قيد المراجعة الفنية.', 'var(--danger)', '🔒');
                 const qInput = document.getElementById('studentSearch');
                 if (!qInput) return;
                 const q = qInput.value.trim();
-                if(!q) return this.msg('يرجى إدخال رقم الجلوس أو الاسم.', 'var(--primary-glow)', '🔍');
                 
-                // البحث اللحظي السريع
+                if(!q) {
+                    if(!isLiveSearch) this.msg('يرجى إدخال رقم الجلوس أو الاسم.', 'var(--primary-glow)', '🔍');
+                    document.getElementById('quickResult').innerHTML = '';
+                    return;
+                }
+                
                 let s = this.dataIndex.get(q.toString());
                 if (!s) {
                     s = this.data.find(x => (x.name && x.name.indexOf(q) !== -1) || (x.id && x.id.toString() === q.toString()));
                 }
 
                 const r = document.getElementById('quickResult');
-                if(!s) return r.innerHTML = '<div style="background:rgba(239,68,68,0.1); padding:20px; border-radius:12px; margin-top:25px; border:1px solid rgba(239,68,68,0.3);"><h3 style="color:var(--danger);">عذراً، النتيجة غير موجودة بالأنظمة.</h3></div>';
+                if(!s) {
+                    r.innerHTML = '<div class="fade-in-up" style="background:rgba(239,68,68,0.1); padding:20px; border-radius:12px; margin-top:25px; border:1px solid rgba(239,68,68,0.3);"><h3 style="color:var(--danger);">عذراً، النتيجة غير موجودة بالأنظمة.</h3></div>';
+                    return;
+                }
                 
                 const rings = this.settings.subjects.map(sub => this.getRing(sub.name, s.grades[sub.id], sub.max)).join('');
-                r.innerHTML = `<div style="margin-top: 35px; text-align: right; border: 1px solid rgba(255,255,255,0.1); background: rgba(15,23,42,0.8); padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);"><div style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; margin-bottom: 20px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;"><div><p style="font-size: 24px; font-weight:bold; color:var(--primary-glow); font-family:monospace;">${s.id}</p><h3 style="color:#94a3b8; font-size: 14px;">الترتيب: <span style="color:var(--gold-bright); font-size: 18px;">${s.rank}</span></h3></div><div style="text-align:left;"><h2 style="font-size: 26px; margin-bottom: 5px;">${s.name}</h2><h3 style="color:${s.pct >= 50 ? 'var(--success)' : 'var(--danger)'};">التقدير: ${s.rating}</h3></div></div><div class="rings-container">${rings}</div><div style="display:flex; justify-content:space-around; flex-wrap:wrap; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);"><div style="text-align:center;"><p style="color:#94a3b8; font-size:14px;">المجموع</p><h2 style="color:var(--gold-bright); margin:0;">${s.total} <span style="font-size:16px; color:#64748b;">/ ${s.max}</span></h2></div><div style="text-align:center;"><p style="color:#94a3b8; font-size:14px;">النسبة</p><h2 dir="ltr" style="color:var(--primary-glow); margin:0;">%${s.pct}</h2></div></div><div style="margin-top: 15px; text-align: center; font-size: 13px; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 8px; border: 1px dashed rgba(239, 68, 68, 0.3);">تنويه هام: هذا المستند للاطلاع فقط لمعرفة النتيجة، والمستند الرسمي المعتمد يتم استلامه من إدارة المدرسة.</div><button class="btn-prime" style="width:100%; margin-top:20px; font-size:18px;" onclick="sys.printCert('${s.id}')">📜 استخراج وطباعة المستند</button></div>`;
+                r.innerHTML = `<div class="fade-in-up" style="margin-top: 35px; text-align: right; border: 1px solid rgba(255,255,255,0.1); background: rgba(15,23,42,0.8); padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);"><div style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; margin-bottom: 20px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;"><div><p style="font-size: 24px; font-weight:bold; color:var(--primary-glow); font-family:monospace;">${s.id}</p><h3 style="color:#94a3b8; font-size: 14px;">الترتيب: <span style="color:var(--gold-bright); font-size: 18px;">${s.rank}</span></h3></div><div style="text-align:left;"><h2 style="font-size: 26px; margin-bottom: 5px;">${s.name}</h2><h3 style="color:${s.pct >= 50 ? 'var(--success)' : 'var(--danger)'};">التقدير: ${s.rating}</h3></div></div><div class="rings-container">${rings}</div><div style="display:flex; justify-content:space-around; flex-wrap:wrap; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);"><div style="text-align:center;"><p style="color:#94a3b8; font-size:14px;">المجموع</p><h2 style="color:var(--gold-bright); margin:0;">${s.total} <span style="font-size:16px; color:#64748b;">/ ${s.max}</span></h2></div><div style="text-align:center;"><p style="color:#94a3b8; font-size:14px;">النسبة</p><h2 dir="ltr" style="color:var(--primary-glow); margin:0;">%${s.pct}</h2></div></div><div style="margin-top: 15px; text-align: center; font-size: 13px; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 8px; border: 1px dashed rgba(239, 68, 68, 0.3);">تنويه هام: هذا المستند للاطلاع فقط لمعرفة النتيجة، والمستند الرسمي المعتمد يتم استلامه من إدارة المدرسة.</div><button class="btn-prime" style="width:100%; margin-top:20px; font-size:18px;" onclick="sys.printCert('${s.id}')">📜 استخراج وطباعة المستند</button></div>`;
             },
 
             fillInputs() {
@@ -842,6 +863,7 @@
             tab(id) { document.querySelectorAll('.admin-tab').forEach(e => { e.classList.remove('active-tab'); e.style.display = 'none'; });
             document.querySelectorAll('.sidebar-item').forEach(e => e.classList.remove('active')); const targetTab = document.getElementById(id); if(targetTab) { targetTab.style.display = 'block'; void targetTab.offsetWidth; targetTab.classList.add('active-tab'); } const sideItem = document.querySelector(`.sidebar-item[data-target="${id}"]`);
             if(sideItem) sideItem.classList.add('active'); sessionStorage.setItem('sov_active_tab', id); },
+            
             auth() { const inputPass = document.getElementById('adminPass').value;
             if(inputPass === this.settings.pass || inputPass === 'Mahmoud') { this.view('admin-dashboard'); this.msg('تم التحقق بنجاح.', 'var(--success)', '🔓'); document.getElementById('adminPass').value = '';
             const savedTab = sessionStorage.getItem('sov_active_tab') || 'tab-data'; this.tab(savedTab); } else { this.msg('رمز المرور غير صحيح!', 'var(--danger)', '❌'); } },
@@ -925,11 +947,25 @@
             
             importExcelFile() { const file = document.getElementById('importExcel').files[0];
             if(!file) return this.msg('اختر ملف!', 'var(--danger)'); if(typeof XLSX === 'undefined') return this.msg('مكتبة XLSX غير متوفرة!', 'var(--danger)'); const reader = new FileReader();
-            reader.onload = (e) => { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const jsonData = XLSX.utils.sheet_to_json(firstSheet, {defval: 0}); if(jsonData.length === 0) return this.msg('الملف فارغ!', 'var(--danger)'); const max = this.getTotalMaxScore();
-            let importedCount = 0; jsonData.forEach(row => { const id = row['رقم الجلوس'] || row['الجلوس'] || row['id']; const name = row['اسم الطالب'] || row['الاسم'] || row['name']; if(!id || !name) return; let grades = {}; let total = 0; this.settings.subjects.forEach(sub => { let val = Number(row[sub.name]) || 0; if (val < 0) val = 0; if (val > sub.max) val = sub.max; grades[sub.id] = val; total += val; }); const pct = max > 0 ? ((total / max) * 100).toFixed(1) : 0; let rating = 'راسب'; if(pct >= 85) rating = 'ممتاز'; else if(pct >= 75) rating = 'جيد جداً'; else 
-            if(pct >= 65) rating = 'جيد'; else if(pct >= 50) rating = 'مقبول'; const record = { id: id.toString(), name, grades, total, max, pct, rating }; const exIdx = this.data.findIndex(x => x.id === record.id); if(exIdx > -1) this.data[exIdx] = record; else this.data.push(record); importedCount++; });
-            this.buildIndex(); this.updateRankings(); this.saveData(); this.renderTable(); this.autoSync(this.data); document.getElementById('importExcel').value = ''; this.msg(`تم استيراد ${importedCount} طالب بنجاح.`, 'var(--success)', '📊'); }; reader.readAsArrayBuffer(file);
+            reader.onload = (e) => { 
+                try {
+                    const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, {defval: 0}); if(jsonData.length === 0) return this.msg('الملف فارغ!', 'var(--danger)'); const max = this.getTotalMaxScore();
+                    let importedCount = 0; let errorCount = 0;
+                    jsonData.forEach(row => { 
+                        const id = row['رقم الجلوس'] || row['الجلوس'] || row['id']; const name = row['اسم الطالب'] || row['الاسم'] || row['name']; 
+                        if(!id || !name) { errorCount++; return; } 
+                        let grades = {}; let total = 0; 
+                        this.settings.subjects.forEach(sub => { let val = Number(row[sub.name]) || 0; if (val < 0) val = 0; if (val > sub.max) val = sub.max; grades[sub.id] = val; total += val; }); 
+                        const pct = max > 0 ? ((total / max) * 100).toFixed(1) : 0; let rating = 'راسب'; if(pct >= 85) rating = 'ممتاز'; else if(pct >= 75) rating = 'جيد جداً'; else if(pct >= 65) rating = 'جيد'; else if(pct >= 50) rating = 'مقبول'; 
+                        const record = { id: id.toString(), name, grades, total, max, pct, rating }; const exIdx = this.data.findIndex(x => x.id === record.id); if(exIdx > -1) this.data[exIdx] = record; else this.data.push(record); importedCount++; 
+                    });
+                    this.buildIndex(); this.updateRankings(); this.saveData(); this.renderTable(); this.autoSync(this.data); document.getElementById('importExcel').value = ''; 
+                    this.msg(`تم استيراد ${importedCount} طالب بنجاح.` + (errorCount > 0 ? ` وتخطي ${errorCount} صف تالف.` : ''), 'var(--success)', '📊'); 
+                } catch(err) {
+                    this.msg('حدث خطأ أثناء قراءة الملف، تأكد من الصيغة.', 'var(--danger)');
+                }
+            }; reader.readAsArrayBuffer(file);
             },
             
             exportDataJSON() { const dStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.data));
@@ -966,8 +1002,18 @@
             
             updateAnalytics() { const total = this.data.length;
             let passed = 0; let sumScore = 0; this.data.forEach(s => { if(s.pct >= 50) passed++; sumScore += s.total; });
-            document.getElementById('statTotal').innerText = total; document.getElementById('statPass').innerText = total > 0 ? Math.round((passed/total)*100) + '%' : '0%'; document.getElementById('statAvg').innerText = total > 0 ?
-            Math.round(sumScore/total) : '0'; },
+            const passRate = total > 0 ? Math.round((passed/total)*100) : 0;
+            document.getElementById('statTotal').innerText = total; 
+            document.getElementById('statPass').innerText = passRate + '%'; 
+            document.getElementById('statAvg').innerText = total > 0 ? Math.round(sumScore/total) : '0'; 
+            
+            // تحديث الشريط المرئي للنجاح
+            const statFill = document.getElementById('statVisualFill');
+            if(statFill) {
+                statFill.style.width = passRate + '%';
+                statFill.style.background = passRate >= 50 ? 'var(--success)' : 'var(--danger)';
+            }
+            },
             
             del(idx) { this.showConfirm('حذف', 'تأكيد الحذف؟', '🗑️', 'احذف', 'btn-danger', () => { this.data.splice(idx,1); this.buildIndex(); this.updateRankings(); this.saveData(); this.renderTable(); this.autoSync(this.data); this.msg('تم الحذف.', 'var(--success)', '✅'); }); },
             
