@@ -448,14 +448,14 @@
                         <div style="background: rgba(15, 23, 42, 0.5); padding: 25px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px;">
                             <h3 style="margin-bottom: 20px; color: var(--gold-bright);">تخصيص عناوين النظام (تتغير فوراً وتلقائياً)</h3>
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
-                                <div><label>العنوان الرئيسي (الأعلى)</label><input type="text" id="mTitle" placeholder="بوابة السيادة للنتائج" oninput="sys.saveInst()"></div>
-                                <div><label>العنوان الفرعي (الأعلى)</label><input type="text" id="mSub" placeholder="Sovereign Cloud Data Center" oninput="sys.saveInst()"></div>
-                                <div><label>عنوان شاشة البحث</label><input type="text" id="mSearchMain" placeholder="الاستعلام الرقمي الشامل" oninput="sys.saveInst()"></div>
-                                <div><label>العنوان الفرعي للبحث</label><input type="text" id="mSearchSub" placeholder="Smart Student Retrieval & Ranking" oninput="sys.saveInst()"></div>
-                                <div><label>النص الإرشادي لمربع البحث</label><input type="text" id="mSearchPlaceholder" placeholder="أدخل رقم الجلوس أو اسم الطالب..." oninput="sys.saveInst()"></div>
-                                <div><label>نص زر البحث</label><input type="text" id="mSearchBtnText" placeholder="عرض الوثيقة المعتمدة" oninput="sys.saveInst()"></div>
-                                <div><label>عنوان شاشة الدخول</label><input type="text" id="mLoginMain" placeholder="المصادقة السيادية" oninput="sys.saveInst()"></div>
-                                <div><label>عنوان لوحة التحكم</label><input type="text" id="mDashMain" placeholder="إدارة النتائج والبيانات" oninput="sys.saveInst()"></div>
+                                <div><label>العنوان الرئيسي (الأعلى)</label><input type="text" id="mTitle" placeholder="بوابة السيادة للنتائج" oninput="sys.debouncedSaveInst()"></div>
+                                <div><label>العنوان الفرعي (الأعلى)</label><input type="text" id="mSub" placeholder="Sovereign Cloud Data Center" oninput="sys.debouncedSaveInst()"></div>
+                                <div><label>عنوان شاشة البحث</label><input type="text" id="mSearchMain" placeholder="الاستعلام الرقمي الشامل" oninput="sys.debouncedSaveInst()"></div>
+                                <div><label>العنوان الفرعي للبحث</label><input type="text" id="mSearchSub" placeholder="Smart Student Retrieval & Ranking" oninput="sys.debouncedSaveInst()"></div>
+                                <div><label>النص الإرشادي لمربع البحث</label><input type="text" id="mSearchPlaceholder" placeholder="أدخل رقم الجلوس أو اسم الطالب..." oninput="sys.debouncedSaveInst()"></div>
+                                <div><label>نص زر البحث</label><input type="text" id="mSearchBtnText" placeholder="عرض الوثيقة المعتمدة" oninput="sys.debouncedSaveInst()"></div>
+                                <div><label>عنوان شاشة الدخول</label><input type="text" id="mLoginMain" placeholder="المصادقة السيادية" oninput="sys.debouncedSaveInst()"></div>
+                                <div><label>عنوان لوحة التحكم</label><input type="text" id="mDashMain" placeholder="إدارة النتائج والبيانات" oninput="sys.debouncedSaveInst()"></div>
                             </div>
                         </div>
 
@@ -476,12 +476,12 @@
                         <div style="background: rgba(15, 23, 42, 0.5); padding: 25px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
                             <h3 style="margin-bottom: 20px; color: var(--gold-bright);">البيانات المطبوعة على الشهادة الرسمية</h3>
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                                <div><label>المحافظة</label><input type="text" id="iGov" oninput="sys.saveInst()"></div>
-                                <div><label>المديرية</label><input type="text" id="iDir" oninput="sys.saveInst()"></div>
-                                <div><label>الإدارة التعليمية</label><input type="text" id="iAdm" oninput="sys.saveInst()"></div>
-                                <div><label>المدرسة</label><input type="text" id="iSch" oninput="sys.saveInst()"></div>
-                                <div><label>العام الدراسي</label><input type="text" id="iYea" placeholder="2025/2026" oninput="sys.saveInst()"></div>
-                                <div><label style="color:var(--primary-glow); font-weight:bold;">اسم مدير المؤسسة (يظهر تحت التوقيع)</label><input type="text" id="iManager" placeholder="الاسم هنا..." oninput="sys.saveInst()"></div>
+                                <div><label>المحافظة</label><input type="text" id="iGov" oninput="sys.debouncedSaveInst()"></div>
+                                <div><label>المديرية</label><input type="text" id="iDir" oninput="sys.debouncedSaveInst()"></div>
+                                <div><label>الإدارة التعليمية</label><input type="text" id="iAdm" oninput="sys.debouncedSaveInst()"></div>
+                                <div><label>المدرسة</label><input type="text" id="iSch" oninput="sys.debouncedSaveInst()"></div>
+                                <div><label>العام الدراسي</label><input type="text" id="iYea" placeholder="2025/2026" oninput="sys.debouncedSaveInst()"></div>
+                                <div><label style="color:var(--primary-glow); font-weight:bold;">اسم مدير المؤسسة (يظهر تحت التوقيع)</label><input type="text" id="iManager" placeholder="الاسم هنا..." oninput="sys.debouncedSaveInst()"></div>
                             </div>
                         </div>
                     </div>
@@ -553,7 +553,7 @@
 
     <script>
         // 🌟 الرابط الأساسي المدمج في النظام (كما طلبت) ليعمل الموقع فوراً على Github
-        window.GLOBAL_SHEET_URL = "https://script.google.com/macros/s/AKfycbw7p6Dez4WQhTwShH18v5Qi1RTYjjc3GCcShA0bA-XJ1FhWT3HzyiHhEIWgbouDoAtz/exec";
+        window.GLOBAL_SHEET_URL = "https://script.google.com/macros/s/AKfycbw8tBjsrZWjatM7cOAvoXYVXISqvhuuUeJmHjsKwrJ1q0EiM87Rs-Sz8PPY6zQlUAMH/exec";
 
         const sys = {
             data: [], 
@@ -577,7 +577,6 @@
                     logo: savedSettings.logo || '',
                     signature: savedSettings.signature || '', 
                     pass: savedSettings.pass || 'Mahmoud',
-                    // أولوية اختيار الرابط: المحفوظ محلياً من لوحة التحكم > ثم الرابط الأساسي في الكود
                     sheetUrl: savedSettings.sheetUrl || window.GLOBAL_SHEET_URL,
                     inst: savedSettings.inst || { gov: '', dir: '', adm: '', sch: '', yea: '', manager: '' },
                     titles: savedSettings.titles || {},
@@ -724,18 +723,8 @@
 
             clearDraft() { localStorage.removeItem('sov_draft'); },
 
-            // محرك التأخير الذكي لمنع اختناق السيرفر عند الكتابة
-            debouncedSync() {
-                clearTimeout(this.syncTimeout);
-                const ind = document.getElementById('syncIndicator');
-                if(ind) { ind.innerText = 'يتم الحفظ...'; ind.style.color = 'var(--gold-bright)'; }
-                this.syncTimeout = setTimeout(() => {
-                    this.autoSync(this.data);
-                }, 2500); // ينتظر 2.5 ثانية بعد آخر لمسة كيبورد ليرسل البيانات مرة واحدة
-            },
-
-            saveInst() {
-                const oldUrl = this.settings.sheetUrl;
+            // محرك التأخير الذكي لحماية الاتصال بجوجل عند كتابة الإعدادات
+            debouncedSaveInst() {
                 this.settings.inst = { 
                     gov: document.getElementById('iGov').value, dir: document.getElementById('iDir').value, 
                     adm: document.getElementById('iAdm').value, sch: document.getElementById('iSch').value, 
@@ -750,15 +739,25 @@
                 this.settings.titles.loginMain = document.getElementById('mLoginMain').value || 'المصادقة السيادية';
                 this.settings.titles.dashMain = document.getElementById('mDashMain').value || 'إدارة النتائج والبيانات';
                 
-                this.settings.sheetUrl = document.getElementById('sheetUrl').value.trim();
+                this.saveSet(); this.updateUI();
+
+                clearTimeout(this.syncTimeout);
+                const ind = document.getElementById('syncIndicator');
+                if(ind) { ind.innerText = 'يتم الحفظ... ⏳'; ind.style.color = 'var(--gold-bright)'; }
                 
+                this.syncTimeout = setTimeout(() => {
+                    this.autoSync(this.data);
+                }, 2000);
+            },
+
+            saveInst() {
+                const oldUrl = this.settings.sheetUrl;
+                this.settings.sheetUrl = document.getElementById('sheetUrl').value.trim();
                 this.saveSet(); 
                 this.updateUI();
 
                 if (this.settings.sheetUrl && this.settings.sheetUrl !== oldUrl && this.settings.sheetUrl.includes('script.google.com')) {
                     this.pullFromCloud();
-                } else {
-                    this.debouncedSync();
                 }
             },
 
@@ -775,7 +774,7 @@
                 const url = this.settings.sheetUrl;
                 const ind = document.getElementById('syncIndicator');
                 if(ind) {
-                    ind.innerText = url ? 'الربط السحابي: جاهز ومفعل ✓' : 'الربط السحابي: في انتظار الرابط...';
+                    ind.innerText = url ? 'الربط السحابي: متصل نشط ✓' : 'الربط السحابي: في انتظار الرابط...';
                     ind.style.color = url ? 'var(--success)' : '#94a3b8';
                 }
             },
@@ -899,7 +898,7 @@
                 this.updateRankings(); this.saveData(); this.renderTable();
             },
 
-            // ⚡ محرك الاستدعاء الذكي (السحب من السحابة)
+            // ⚡ محرك الاستدعاء الذكي (يحمي بياناتك المحلية إذا كانت السحابة فارغة)
             async pullFromCloud(silent = false) {
                 let url = this.settings.sheetUrl || window.GLOBAL_SHEET_URL;
                 if(!url || !url.includes("script.google.com")) return;
@@ -916,7 +915,6 @@
                         const cloudSettings = result.payload.settings;
                         
                         let hasCloudData = (cloudData && Array.isArray(cloudData) && cloudData.length > 0);
-                        // الحماية الكبرى: نتأكد أن السحابة بها بيانات أساسية حقيقية وليست فارغة
                         let hasCloudSet = (cloudSettings && Object.keys(cloudSettings).length > 0 && cloudSettings.titles && cloudSettings.titles.main);
 
                         if(hasCloudData) {
@@ -927,7 +925,7 @@
                         }
                         
                         if(hasCloudSet) {
-                            // إذا كانت السحابة ممتلئة فعلاً، نقوم بتطبيقها بأمان
+                            // إذا السحابة ممتلئة فعلاً، نسحبها بأمان
                             ['inst', 'titles', 'subjects', 'logo', 'signature', 'locked'].forEach(k => {
                                 if(cloudSettings[k] !== undefined) this.settings[k] = cloudSettings[k];
                             });
@@ -938,7 +936,7 @@
                             this.renderLogo();
                             this.renderSignature();
                         } else if (!hasCloudSet && Object.keys(this.settings.inst).length > 0) {
-                            // إذا كانت السحابة فارغة تماماً، ونحن نملك بيانات محلياً، نقوم برفعها لتأسيس السحابة
+                            // الحماية الذكية: السحابة فارغة ولكن لدينا بيانات في الجهاز، نقوم برفعها للسحابة فوراً لتأسيسها!
                             this.autoSync(this.data);
                         }
 
@@ -955,7 +953,7 @@
                 }
             },
 
-            // 🚀 محرك المزامنة والإرسال القوي
+            // 🚀 محرك المزامنة والإرسال القوي في الخلفية
             async autoSync(payload) {
                 let url = this.settings.sheetUrl || window.GLOBAL_SHEET_URL;
                 if(!url) return;
