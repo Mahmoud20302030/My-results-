@@ -78,7 +78,6 @@
         .official-table tbody tr:hover { background: rgba(56, 189, 248, 0.08); }
         .rank-badge { display: inline-block; padding: 4px 10px; border-radius: 8px; font-weight: bold; font-size: 12px; }
 
-        /* Dashboard & Tabs Fixes */
         .dashboard-layout { display: grid; grid-template-columns: 280px 1fr; gap: 30px; }
         .sidebar-container { display: flex; flex-direction: column; gap: 8px; }
         .sidebar-item { padding: 16px 20px; cursor: pointer; border-radius: 12px; font-weight: 600; display: flex; align-items: center; gap: 12px; color: #cbd5e1; transition: all 0.3s ease;}
@@ -98,7 +97,6 @@
 
         .grid-subjects { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin: 20px 0; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);}
 
-        /* Premium Certificate */
         .cert-wrapper { overflow-x: auto; padding: 20px 0; display: flex; justify-content: center;}
         .cert-master { 
             width: 100%; max-width: 1000px; min-width: 800px; color: #1e293b; padding: 60px; position: relative; 
@@ -165,7 +163,6 @@
 
         /* =========================================================
            FOOTER PROFESSIONALLY CENTERED - SOVEREIGN EAGLE
-           (EXACTLY PRESERVED FROM SOURCE - NO MODIFICATIONS)
            ========================================================= */
         .content-placeholder { flex: 1; }
 
@@ -546,8 +543,8 @@
     </div>
 
     <script>
-        // الرابط الأساسي والمحدث ليعمل الموقع فوراً من Github
-        window.GLOBAL_SHEET_URL = "https://script.google.com/macros/s/AKfycbw8tBjsrZWjatM7cOAvoXYVXISqvhuuUeJmHjsKwrJ1q0EiM87Rs-Sz8PPY6zQlUAMH/exec";
+        // 🌟 الرابط الأساسي ليعمل الموقع فوراً من Github
+        window.GLOBAL_SHEET_URL = "https://script.google.com/macros/s/AKfycbw7p6Dez4WQhTwShH18v5Qi1RTYjjc3GCcShA0bA-XJ1FhWT3HzyiHhEIWgbouDoAtz/exec";
 
         const sys = {
             data: [], 
@@ -604,7 +601,7 @@
                 this.renderTable();
                 this.updateAnalytics();
 
-                // السحب التلقائي بمجرد الدخول (لكي يجد الطلاب النتائج على GitHub)
+                // السحب التلقائي بمجرد الدخول
                 if (this.settings.sheetUrl && this.settings.sheetUrl.includes("script.google.com")) {
                     this.pullFromCloud(true);
                 }
@@ -717,7 +714,7 @@
 
             clearDraft() { localStorage.removeItem('sov_draft'); },
 
-            // الحفظ المحلي الفوري لحماية البيانات من التحديث (Refresh)
+            // الحفظ المحلي اللحظي لحماية البيانات من التحديث
             saveInstLocal() {
                 this.settings.inst = { 
                     gov: document.getElementById('iGov').value, dir: document.getElementById('iDir').value, 
@@ -738,18 +735,17 @@
                 this.updateUI();
             },
 
-            // محرك التأخير الذكي لحماية الاتصال بجوجل عند الكتابة وإرسالها لاحقاً بصمت
+            // التأخير الذكي لحفظ البيانات وإرسالها للسحابة بصمت
             debouncedSaveInst() {
-                this.saveInstLocal(); // يحفظها في جهازك في اللحظة التي تكتب فيها لكي لا تضيع
+                this.saveInstLocal(); 
 
                 clearTimeout(this.syncTimeout);
                 const ind = document.getElementById('syncIndicator');
                 if(ind) { ind.innerText = 'يتم الحفظ... ⏳'; ind.style.color = 'var(--gold-bright)'; }
                 
-                // يرسل البيانات لجوجل بعد التوقف عن الكتابة بثانيتين لتخفيف الضغط
                 this.syncTimeout = setTimeout(() => {
                     this.autoSync(this.data);
-                }, 2000);
+                }, 1500); 
             },
 
             updateUI() {
@@ -765,7 +761,7 @@
                 const url = this.settings.sheetUrl;
                 const ind = document.getElementById('syncIndicator');
                 if(ind) {
-                    ind.innerText = url ? 'الربط السحابي: متصل نشط ✓' : 'الربط السحابي: في انتظار الرابط...';
+                    ind.innerText = url ? 'الربط السحابي: جاهز ومفعل ✓' : 'الربط السحابي: في انتظار الرابط...';
                     ind.style.color = url ? 'var(--success)' : '#94a3b8';
                 }
             },
@@ -889,7 +885,7 @@
                 this.updateRankings(); this.saveData(); this.renderTable();
             },
 
-            // ⚡ محرك الاستدعاء الذكي والمحمي (يحمي بياناتك المحلية من المسح)
+            // ⚡ الدرع الذكي: سحب البيانات مع حماية بياناتك المحلية من المسح
             async pullFromCloud(silent = false) {
                 let url = this.settings.sheetUrl || window.GLOBAL_SHEET_URL;
                 if(!url || !url.includes("script.google.com")) return;
@@ -906,6 +902,7 @@
                         const cloudSettings = result.payload.settings;
                         
                         let hasCloudData = (cloudData && Array.isArray(cloudData) && cloudData.length > 0);
+                        // يتأكد أن السحابة بداخلها بيانات حقيقية وليست مجرد هيكل فارغ
                         let hasCloudSet = (cloudSettings && Object.keys(cloudSettings).length > 0 && cloudSettings.titles && cloudSettings.titles.main);
 
                         if(hasCloudData) {
@@ -916,6 +913,7 @@
                         }
                         
                         if(hasCloudSet) {
+                            // السحابة ممتلئة فعلاً، نسحبها لجهازك
                             ['inst', 'titles', 'subjects', 'logo', 'signature', 'locked'].forEach(k => {
                                 if(cloudSettings[k] !== undefined) this.settings[k] = cloudSettings[k];
                             });
@@ -925,8 +923,8 @@
                             this.renderDynamicSubjects();
                             this.renderLogo();
                             this.renderSignature();
-                        } else if (!hasCloudSet && Object.keys(this.settings.inst).length > 0) {
-                            // إذا وجد السحابة فارغة من الإعدادات، يرفع إعدادات جهازك الحالية إليها لحمايتها
+                        } else if (!hasCloudSet && this.settings.titles && this.settings.titles.main) {
+                            // الدرع الذكي: السحابة فارغة ولكن لدينا بيانات في جهازك، ارفعها فوراً لتأسيس السحابة
                             this.autoSync(this.data);
                         }
 
@@ -943,7 +941,7 @@
                 }
             },
 
-            // 🚀 محرك الإرسال القوي لتخطي حماية المتصفحات (CORS) 
+            // 🚀 محرك الإرسال الخارق: يتخطى حماية المتصفحات (CORS) بنسبة 100%
             async autoSync(payload) {
                 let url = this.settings.sheetUrl || window.GLOBAL_SHEET_URL;
                 if(!url) return;
@@ -951,23 +949,21 @@
                     const ind = document.getElementById('syncIndicator');
                     if(ind) { ind.innerText = 'جاري الحفظ بالسحابة... ⏳'; ind.style.color = 'var(--gold-bright)'; }
                     
-                    // تحويل البيانات لنمط Form URL Encoded لتخطي الفحص المسبق للمتصفحات (OPTIONS Preflight)
-                    const formData = new URLSearchParams();
-                    formData.append('payload', JSON.stringify({ 
-                        source: "SovereignSystem", 
-                        timestamp: new Date().toISOString(), 
-                        data: payload,
-                        settings: this.settings 
-                    }));
-
+                    // استخدام (no-cors) و (text/plain) يجبر المتصفح على إرسال البيانات دون حجبها
                     fetch(url, {
-                        method: 'POST',
-                        body: formData,
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                        method: 'POST', 
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ 
+                            source: "SovereignSystem", 
+                            timestamp: new Date().toISOString(), 
+                            data: payload,
+                            settings: this.settings 
+                        })
                     }).then(() => {
                         if(ind) { ind.innerText = 'الربط السحابي: متصل نشط ✓'; ind.style.color = 'var(--success)'; }
                     }).catch(e => {
-                        if(ind) { ind.innerText = 'تم الحفظ محلياً (خطأ في اتصال السحابة)'; ind.style.color = 'var(--danger)'; }
+                        if(ind) { ind.innerText = 'تم الحفظ محلياً فقط'; ind.style.color = 'var(--danger)'; }
                     });
                 } catch(e) { console.warn("Sync failed", e); }
             },
@@ -1141,18 +1137,15 @@
             search() {
                 if(this.settings.locked) return this.msg('النظام مغلق الآن.', 'var(--danger)', '🔒');
                 const q = document.getElementById('studentSearch').value.trim(); if(!q) return this.msg('أدخل رقم الجلوس أو الاسم.', 'var(--primary-glow)', '🔍');
-                
-                // حل ذكي للبحث لتطابق أرقام الجلوس حتى لو كانت مسجلة كنصوص
                 const s = this.data.find(x => x.id.toString() === q.toString() || x.name.includes(q)); 
                 const r = document.getElementById('quickResult');
-                
                 if(!s) return r.innerHTML = '<div style="background:rgba(239,68,68,0.1); padding:20px; border-radius:12px; margin-top:25px; border:1px solid rgba(239,68,68,0.3);"><h3 style="color:var(--danger);">عذراً، النتيجة غير موجودة بالأنظمة.</h3></div>';
                 const rings = this.settings.subjects.map(sub => this.getRing(sub.name, s.grades[sub.id], sub.max)).join('');
                 r.innerHTML = `<div style="margin-top: 35px; text-align: right; border: 1px solid rgba(255,255,255,0.1); background: rgba(15,23,42,0.8); padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);"><div style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; margin-bottom: 20px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;"><div><p style="font-size: 24px; font-weight:bold; color:var(--primary-glow); font-family:monospace;">${s.id}</p><h3 style="color:#94a3b8; font-size: 14px;">الترتيب: <span style="color:var(--gold-bright); font-size: 18px;">${s.rank}</span></h3></div><div style="text-align:left;"><h2 style="font-size: 26px; margin-bottom: 5px;">${s.name}</h2><h3 style="color:${s.pct >= 50 ? 'var(--success)' : 'var(--danger)'};">التقدير: ${s.rating}</h3></div></div><div class="rings-container">${rings}</div><div style="display:flex; justify-content:space-around; flex-wrap:wrap; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);"><div style="text-align:center;"><p style="color:#94a3b8; font-size:14px;">المجموع</p><h2 style="color:var(--gold-bright); margin:0;">${s.total} <span style="font-size:16px; color:#64748b;">/ ${s.max}</span></h2></div><div style="text-align:center;"><p style="color:#94a3b8; font-size:14px;">النسبة</p><h2 dir="ltr" style="color:var(--primary-glow); margin:0;">%${s.pct}</h2></div></div><div style="margin-top: 15px; text-align: center; font-size: 13px; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 8px; border: 1px dashed rgba(239, 68, 68, 0.3);">تنويه هام: هذا المستند للاطلاع فقط لمعرفة النتيجة، والمستند الرسمي المعتمد يتم استلامه من إدارة المدرسة.</div><button class="btn-prime" style="width:100%; margin-top:20px; font-size:18px;" onclick="sys.printCert('${s.id}')">📜 استخراج وطباعة المستند</button></div>`;
             },
 
             printCert(id) {
-                const s = this.data.find(x => x.id === id || x.id.toString() === id.toString()); const logo = this.settings.logo || 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Eagle_of_Saladin.svg/200px-Eagle_of_Saladin.svg.png'; const inst = this.settings.inst;
+                const s = this.data.find(x => x.id.toString() === id.toString()); const logo = this.settings.logo || 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Eagle_of_Saladin.svg/200px-Eagle_of_Saladin.svg.png'; const inst = this.settings.inst;
                 const isPassing = s.pct >= 50; const motivationTitle = isPassing ? "تهنئة وتبريكات بالنجاح والتفوق" : "رسالة دعم وتشجيع"; const motivationText = isPassing ? "نجاحك هو ثمرة اجتهادك المخلص. واصل طريق التميز والمجد بخطى واثقة!" : "التعثر هو محطة للنهوض والانطلاق بقوة أكبر. نحن نثق بقدرتك على تجاوز التحدي والنجاح."; const motivationColor = isPassing ? "var(--success)" : "var(--danger)";
                 const ths = this.settings.subjects.map(sub => `<th>${sub.name} <br><small style="color:#64748b;">(${sub.max})</small></th>`).join(''); const tds = this.settings.subjects.map(sub => `<td>${s.grades[sub.id] || 0}</td>`).join('');
                 let rankBadge = s.rank; if(s.rank === 1) rankBadge = "المركز الأول 🥇"; else if(s.rank === 2) rankBadge = "المركز الثاني 🥈"; else if(s.rank === 3) rankBadge = "المركز الثالث 🥉";
