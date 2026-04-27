@@ -416,7 +416,7 @@
 
                         <div style="background: rgba(15, 23, 42, 0.5); padding: 25px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 30px;">
                             <h3 style="margin-bottom: 10px;">☁️ الربط المباشر مع Google Sheets (الاستنساخ السحابي)</h3>
-                            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">يتم السحب تلقائياً عند الدخول، ويمكنك تغيير الرابط هنا ليتم اعتماده كمركز بيانات جديد.</p>
+                            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">الرابط الافتراضي مدمج بالفعل في النظام. يمكنك تغييره هنا في أي وقت دون الحاجة لتعديل الكود.</p>
                             <input type="text" id="sheetUrl" placeholder="أدخل رابط API الخاص بجوجل شيت..." oninput="sys.saveInst()">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-wrap: wrap; gap:10px;">
                                 <span id="syncIndicator" style="font-size: 14px; font-weight: bold;"></span>
@@ -552,13 +552,13 @@
     </div>
 
     <script>
-        // 🌟 الرابط الافتراضي الدائم الذي طلبته (تم تضمينه هنا ليعمل الموقع فوراً على Github)
-        // يمكن تغييره لاحقاً من داخل لوحة تحكم البرنامج بكل سهولة
+        // 🌟 الرابط الأساسي المدمج في النظام (كما طلبت) ليعمل الموقع فوراً على Github
         window.GLOBAL_SHEET_URL = "https://script.google.com/macros/s/AKfycbw7p6Dez4WQhTwShH18v5Qi1RTYjjc3GCcShA0bA-XJ1FhWT3HzyiHhEIWgbouDoAtz/exec";
 
         const sys = {
             data: [], 
             settings: {},
+            syncTimeout: null,
             
             init() {
                 let savedData = JSON.parse(localStorage.getItem('sov_data'));
@@ -577,8 +577,8 @@
                     logo: savedSettings.logo || '',
                     signature: savedSettings.signature || '', 
                     pass: savedSettings.pass || 'Mahmoud',
-                    // أولوية اختيار الرابط: المحفوظ محلياً > ثم الرابط الأساسي في الكود
-                    sheetUrl: savedSettings.sheetUrl || window.GLOBAL_SHEET_URL || '',
+                    // أولوية اختيار الرابط: المحفوظ محلياً من لوحة التحكم > ثم الرابط الأساسي في الكود
+                    sheetUrl: savedSettings.sheetUrl || window.GLOBAL_SHEET_URL,
                     inst: savedSettings.inst || { gov: '', dir: '', adm: '', sch: '', yea: '', manager: '' },
                     titles: savedSettings.titles || {},
                     subjects: savedSettings.subjects || null 
@@ -611,7 +611,7 @@
                 this.renderTable();
                 this.updateAnalytics();
 
-                // ⚡ السحب التلقائي بمجرد الدخول (لكي يجد الطلاب النتائج على GitHub)
+                // ⚡ محرك الاستدعاء التلقائي بمجرد الدخول (لكي يجد الطلاب النتائج على GitHub)
                 if (this.settings.sheetUrl && this.settings.sheetUrl.includes("script.google.com")) {
                     this.pullFromCloud(true);
                 }
@@ -724,6 +724,16 @@
 
             clearDraft() { localStorage.removeItem('sov_draft'); },
 
+            // محرك التأخير الذكي لمنع اختناق السيرفر عند الكتابة
+            debouncedSync() {
+                clearTimeout(this.syncTimeout);
+                const ind = document.getElementById('syncIndicator');
+                if(ind) { ind.innerText = 'يتم الحفظ...'; ind.style.color = 'var(--gold-bright)'; }
+                this.syncTimeout = setTimeout(() => {
+                    this.autoSync(this.data);
+                }, 2500); // ينتظر 2.5 ثانية بعد آخر لمسة كيبورد ليرسل البيانات مرة واحدة
+            },
+
             saveInst() {
                 const oldUrl = this.settings.sheetUrl;
                 this.settings.inst = { 
@@ -745,11 +755,10 @@
                 this.saveSet(); 
                 this.updateUI();
 
-                // إذا غيّر الرابط > اسحب الداتا، وإذا غيّر الإعدادات والعناوين فقط > ارفعها للسحابة لحفظها للطلاب
                 if (this.settings.sheetUrl && this.settings.sheetUrl !== oldUrl && this.settings.sheetUrl.includes('script.google.com')) {
                     this.pullFromCloud();
                 } else {
-                    this.autoSync(this.data);
+                    this.debouncedSync();
                 }
             },
 
@@ -766,7 +775,7 @@
                 const url = this.settings.sheetUrl;
                 const ind = document.getElementById('syncIndicator');
                 if(ind) {
-                    ind.innerText = url ? 'الربط السحابي: متصل نشط ✓' : 'الربط السحابي: في انتظار الرابط...';
+                    ind.innerText = url ? 'الربط السحابي: جاهز ومفعل ✓' : 'الربط السحابي: في انتظار الرابط...';
                     ind.style.color = url ? 'var(--success)' : '#94a3b8';
                 }
             },
@@ -890,16 +899,15 @@
                 this.updateRankings(); this.saveData(); this.renderTable();
             },
 
-            // المحرك السحابي الذكي للاستدعاء والتحديث الفوري
+            // ⚡ محرك الاستدعاء الذكي (السحب من السحابة)
             async pullFromCloud(silent = false) {
                 let url = this.settings.sheetUrl || window.GLOBAL_SHEET_URL;
                 if(!url || !url.includes("script.google.com")) return;
                 
                 const ind = document.getElementById('syncIndicator');
-                if(!silent && ind) { ind.innerText = 'جاري مزامنة وسحب البيانات... ⏳'; ind.style.color = 'var(--gold-bright)'; }
+                if(!silent && ind) { ind.innerText = 'جاري السحب والمطابقة... ⏳'; ind.style.color = 'var(--gold-bright)'; }
 
                 try {
-                    // الاتصال بجوجل شيت لطلب النسخة الكاملة
                     const response = await fetch(url + "?t=" + new Date().getTime());
                     const result = await response.json();
 
@@ -908,9 +916,9 @@
                         const cloudSettings = result.payload.settings;
                         
                         let hasCloudData = (cloudData && Array.isArray(cloudData) && cloudData.length > 0);
-                        let hasCloudSet = (cloudSettings && Object.keys(cloudSettings).length > 0);
+                        // الحماية الكبرى: نتأكد أن السحابة بها بيانات أساسية حقيقية وليست فارغة
+                        let hasCloudSet = (cloudSettings && Object.keys(cloudSettings).length > 0 && cloudSettings.titles && cloudSettings.titles.main);
 
-                        // استرجاع وترتيب الطلاب
                         if(hasCloudData) {
                             this.data = cloudData;
                             this.updateRankings();
@@ -918,10 +926,10 @@
                             this.renderTable();
                         }
                         
-                        // استرجاع الإعدادات (العناوين، الختم، أسماء المواد) لتعمل بثبات على Github
                         if(hasCloudSet) {
-                            ['inst', 'titles', 'subjects', 'logo', 'signature'].forEach(k => {
-                                if(cloudSettings[k]) this.settings[k] = cloudSettings[k];
+                            // إذا كانت السحابة ممتلئة فعلاً، نقوم بتطبيقها بأمان
+                            ['inst', 'titles', 'subjects', 'logo', 'signature', 'locked'].forEach(k => {
+                                if(cloudSettings[k] !== undefined) this.settings[k] = cloudSettings[k];
                             });
                             this.saveSet();
                             this.updateUI();
@@ -929,9 +937,11 @@
                             this.renderDynamicSubjects();
                             this.renderLogo();
                             this.renderSignature();
+                        } else if (!hasCloudSet && Object.keys(this.settings.inst).length > 0) {
+                            // إذا كانت السحابة فارغة تماماً، ونحن نملك بيانات محلياً، نقوم برفعها لتأسيس السحابة
+                            this.autoSync(this.data);
                         }
 
-                        // رفع تلقائي للسحابة إذا كانت بيانات الطالب موجودة محلياً ولم تجدها في السحابة
                         if(!hasCloudData && this.data.length > 0) {
                             this.autoSync(this.data);
                         }
@@ -940,12 +950,12 @@
                         if(!silent) this.msg('تم التحديث والمزامنة مع السحابة بنجاح', 'var(--success)', '☁️');
                     }
                 } catch(e) {
-                    if(!silent && ind) { ind.innerText = 'الربط السحابي: هناك خطأ بالاتصال'; ind.style.color = 'var(--danger)'; }
+                    if(!silent && ind) { ind.innerText = 'الربط السحابي: لا يوجد اتصال'; ind.style.color = 'var(--danger)'; }
                     console.warn("Pull Error", e);
                 }
             },
 
-            // محرك الإرسال الفوري لضمان حفظ كل نقرة تقوم بها
+            // 🚀 محرك المزامنة والإرسال القوي
             async autoSync(payload) {
                 let url = this.settings.sheetUrl || window.GLOBAL_SHEET_URL;
                 if(!url) return;
@@ -1033,7 +1043,7 @@
             },
 
             generateDummyData() {
-                this.showConfirm('توليد بيانات اختبارية', 'سيتم إضافة 50 طالباً ببيانات ودرجات عشوائية لاختبار قدرات النظام، وسيتم نقلك مباشرة لشاشة البيانات للاطلاع عليها وتعديلها.<br><br><b>هل ترغب في الاستمرار؟</b>', '🧪', 'نعم، قم بالتوليد', 'btn-gold',
+                this.showConfirm('توليد بيانات اختبارية', 'سيتم إضافة 50 طالباً ببيانات ودرجات عشوائية لاختبار قدرات النظام.<br><br><b>هل ترغب في الاستمرار؟</b>', '🧪', 'نعم، قم بالتوليد', 'btn-gold',
                     () => {
                         const firstNames = ["أحمد", "محمد", "محمود", "عمر", "علي", "فاطمة", "مريم", "زينب", "سارة", "نور", "طارق", "خالد", "يوسف", "حسن", "حسين", "عبدالرحمن", "ياسين", "ندى", "ياسمين", "ليلى"];
                         const lastNames = ["عبد الله", "إبراهيم", "مصطفى", "سعيد", "صالح", "محسن", "رضا", "ياسين", "سمير", "توفيق", "سعد", "عادل", "كمال", "سليمان", "جابر"];
@@ -1090,7 +1100,7 @@
                 else { this.data.push(record); this.msg('تم حفظ الطالب الجديد.', 'var(--success)', '💾'); }
                 
                 this.updateRankings(); this.saveData(); this.renderTable(); 
-                this.autoSync(this.data); // حفظ مباشر في السحابة
+                this.autoSync(this.data); 
                 this.clearDraft(); 
                 
                 if(idInput) idInput.value = ''; if(nameInput) nameInput.value = '';
