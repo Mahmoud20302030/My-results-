@@ -19,7 +19,7 @@
             --primary-glow: #38bdf8;
             --danger: #ef4444;
             --success: #10b981;
-            --rank-1: #ffd700; 
+            --rank-1: #ffd700;
             --rank-2: #c0c0c0; 
             --rank-3: #cd7f32; 
             
@@ -57,8 +57,9 @@
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 
         .btn-prime { background: linear-gradient(135deg, var(--primary-glow), #0284c7); color: #fff; font-weight: bold; padding: clamp(10px, 1.2vw, 14px) clamp(15px, 2vw, 25px); border-radius: 10px; cursor: pointer; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4); font-size: 14px;}
-        .btn-prime:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(2, 132, 199, 0.6); }
-        .btn-prime:active { transform: translateY(1px); }
+        .btn-prime:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(2, 132, 199, 0.6); }
+        .btn-prime:active:not(:disabled) { transform: translateY(1px); }
+        .btn-prime:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; box-shadow: none; opacity: 0.8; }
         .btn-danger { background: linear-gradient(135deg, #ef4444, #b91c1c); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); }
         .btn-gold { background: linear-gradient(135deg, var(--gold-bright), var(--gold-dark)); color: #000; box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3); }
 
@@ -104,7 +105,7 @@
             background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
             background-size: 25px 25px;
             border: 2px solid #e2e8f0; border-radius: 16px; 
-            box-shadow: 0 25px 50px rgba(0,0,0,0.8), inset 0 0 0 10px #fff, inset 0 0 0 14px var(--gold-dark); 
+            box-shadow: 0 25px 50px rgba(0,0,0,0.8), inset 0 0 0 10px #fff, inset 0 0 0 14px var(--gold-dark);
             overflow: hidden;
         }
         .cert-master::before {
@@ -167,7 +168,7 @@
         .content-placeholder { flex: 1; }
 
         .footer-wrapper {
-            padding: 80px 20px; 
+            padding: 80px 20px;
             background: rgba(2, 5, 10, 0.98); 
             border-top: 3px solid var(--primary-color, #E5C158); 
             display: flex; 
@@ -179,7 +180,7 @@
             height: 550px; 
             flex-shrink: 0; 
             box-shadow: 0 -15px 50px rgba(0,0,0,0.8);
-            animation: vibrantShift 12s infinite alternate linear; 
+            animation: vibrantShift 12s infinite alternate linear;
         }
 
         @keyframes vibrantShift { 0% { filter: hue-rotate(0deg); } 50% { filter: hue-rotate(180deg); } 100% { filter: hue-rotate(360deg); } }
@@ -292,7 +293,13 @@
                 <div class="search-container">
                     <input type="text" id="studentSearch" placeholder="أدخل رقم الجلوس أو اسم الطالب..." onkeypress="if(event.key === 'Enter') sys.search()">
                 </div>
+              
                 <button class="btn-prime" id="displaySearchBtn" style="width: 100%; max-width: 400px; font-size: 18px;" onclick="sys.search()">🔍 عرض الوثيقة المعتمدة</button>
+                
+                <div id="dbStatusIndicator" style="margin-top: 15px; font-size: 14px; color: var(--success); font-weight: bold; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.3); display: inline-block;">
+                    🟢 النظام متصل وجاهز: <span id="readyStudentCount" style="color:var(--gold-bright); font-size:16px;">0</span> طالب مسجل
+                </div>
+
                 <div id="quickResult"></div>
             </div>
         </div>
@@ -339,7 +346,7 @@
                         </div>
                         
                         <div id="dynamicSubjectsContainer" class="grid-subjects"></div>
-                        
+                    
                         <div class="live-preview-box">
                             <span style="color: #94a3b8; font-weight: bold;">المجموع المتوقع: <span id="liveTotalPreview" style="color: var(--gold-bright); font-size: 20px; padding: 0 10px;">0</span></span>
                             <span style="color: #94a3b8; font-weight: bold;">النسبة: <span id="livePctPreview" style="color: var(--primary-glow); font-size: 20px; padding: 0 10px;" dir="ltr">%0.0</span></span>
@@ -396,7 +403,6 @@
                                 <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">يتم توليد ملف بناءً على المواد المفعلة حالياً.</p>
                                 <button class="btn-prime btn-info" style="width: 100%;" onclick="sys.downloadExcelTemplate()">تحميل قالب Excel</button>
                             </div>
-                            
                             <div style="background: rgba(15, 23, 42, 0.5); padding: 25px; border-radius: 16px; border: 1px solid var(--gold-dark);">
                                 <h3 style="margin-bottom: 10px; color: var(--gold-bright);">📤 2. استيراد ملف (Excel)</h3>
                                 <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">ارفع الملف بعد التعبئة لحساب وترتيب الطلاب فوراً.</p>
@@ -543,25 +549,37 @@
     </div>
 
     <script>
-        // 🌟 الرابط الأساسي ليعمل الموقع فوراً من Github
         window.GLOBAL_SHEET_URL = "https://script.google.com/macros/s/AKfycbw7p6Dez4WQhTwShH18v5Qi1RTYjjc3GCcShA0bA-XJ1FhWT3HzyiHhEIWgbouDoAtz/exec";
-
+        
         const sys = {
             data: [], 
             settings: {},
             syncTimeout: null,
             
             init() {
-                let savedData = JSON.parse(localStorage.getItem('sov_data'));
-                let backupData = JSON.parse(localStorage.getItem('sov_data_backup'));
+                // محاولة القراءة محلياً للسرعة
+                let savedData, backupData, savedSettings;
+                try {
+                    savedData = JSON.parse(localStorage.getItem('sov_data'));
+                    backupData = JSON.parse(localStorage.getItem('sov_data_backup'));
+                    savedSettings = JSON.parse(localStorage.getItem('sov_settings'));
+                } catch(e) { console.warn("Storage Read Error", e); }
                 
                 if ((!savedData || !Array.isArray(savedData) || savedData.length === 0) && backupData && Array.isArray(backupData) && backupData.length > 0) {
                     savedData = backupData;
                 }
                 this.data = (savedData && Array.isArray(savedData)) ? savedData : [];
-
-                let savedSettings = JSON.parse(localStorage.getItem('sov_settings'));
                 if (!savedSettings) savedSettings = {};
+
+                // 🌟 إرساء البيانات الافتراضية الثابتة (كما طلبت)
+                const defaultInst = {
+                    gov: 'محافظة الدقهلية',
+                    dir: 'مديرية التربية والتعليم بالدقهلية',
+                    adm: savedSettings.inst?.adm || '',
+                    sch: 'مدرسة محمد هاشم النقيب الثانوية المشتركة',
+                    yea: '2026/2025',
+                    manager: savedSettings.inst?.manager || ''
+                };
 
                 this.settings = {
                     locked: savedSettings.locked || false,
@@ -569,7 +587,7 @@
                     signature: savedSettings.signature || '', 
                     pass: savedSettings.pass || 'Mahmoud',
                     sheetUrl: savedSettings.sheetUrl || window.GLOBAL_SHEET_URL,
-                    inst: savedSettings.inst || { gov: '', dir: '', adm: '', sch: '', yea: '', manager: '' },
+                    inst: (savedSettings.inst && savedSettings.inst.gov) ? savedSettings.inst : defaultInst,
                     titles: savedSettings.titles || {},
                     subjects: savedSettings.subjects || null 
                 };
@@ -584,14 +602,13 @@
                     ];
                 }
 
-                this.saveSet(); 
+                this.saveSet();
                 this.fillInputs();
 
                 document.querySelectorAll('.admin-tab').forEach(e => {
-                    e.classList.remove('active-tab');
-                    e.style.display = 'none';
+                    e.classList.remove('active-tab'); e.style.display = 'none';
                 });
-                
+
                 this.updateUI();
                 this.renderLogo();
                 this.renderSignature();
@@ -600,18 +617,22 @@
                 this.updateRankings();
                 this.renderTable();
                 this.updateAnalytics();
+                this.updateReadyIndicator();
 
-                // السحب التلقائي بمجرد الدخول
+                // 🚀 الاستدعاء التلقائي والإجباري للسحابة عند فتح الرابط
                 if (this.settings.sheetUrl && this.settings.sheetUrl.includes("script.google.com")) {
-                    this.pullFromCloud(true);
+                    this.pullFromCloud(); // يقوم بإغلاق البحث حتى ينتهي التحميل
                 }
+            },
+
+            updateReadyIndicator() {
+                const countSpan = document.getElementById('readyStudentCount');
+                if(countSpan) countSpan.innerText = this.data.length;
             },
 
             fillInputs() {
                 if(!this.settings) return;
-                const sUrl = document.getElementById('sheetUrl');
-                if(sUrl) sUrl.value = this.settings.sheetUrl || '';
-                
+                const sUrl = document.getElementById('sheetUrl'); if(sUrl) sUrl.value = this.settings.sheetUrl || '';
                 if(this.settings.inst) {
                     const elGov = document.getElementById('iGov'); if(elGov) elGov.value = this.settings.inst.gov || '';
                     const elDir = document.getElementById('iDir'); if(elDir) elDir.value = this.settings.inst.dir || '';
@@ -637,7 +658,8 @@
                 const t = document.createElement('div'); t.className = 'toast'; 
                 t.style.borderColor = color; t.style.color = color;
                 t.innerHTML = `<span>${icon}</span> <span>${text}</span>`;
-                b.appendChild(t); setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3500);
+                b.appendChild(t);
+                setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3500);
             },
 
             showConfirm(title, message, icon, confirmText, confirmClass, onConfirm) {
@@ -648,13 +670,14 @@
                 document.getElementById('modal-desc').innerHTML = message;
                 
                 const btnConfirm = document.getElementById('modal-btn-confirm');
-                btnConfirm.innerText = confirmText; btnConfirm.className = `btn-prime ${confirmClass}`;
+                btnConfirm.innerText = confirmText;
+                btnConfirm.className = `btn-prime ${confirmClass}`;
                 
                 overlay.style.display = 'flex'; void overlay.offsetWidth; overlay.style.opacity = '1';
                 card.style.transform = 'translateY(0) scale(1)';
-                
                 const close = () => {
-                    overlay.style.opacity = '0'; card.style.transform = 'translateY(-30px) scale(0.95)';
+                    overlay.style.opacity = '0';
+                    card.style.transform = 'translateY(-30px) scale(0.95)';
                     setTimeout(() => { overlay.style.display = 'none'; }, 300);
                 };
                 document.getElementById('modal-btn-cancel').onclick = close;
@@ -681,7 +704,8 @@
             auth() {
                 const inputPass = document.getElementById('adminPass').value;
                 if(inputPass === this.settings.pass || inputPass === 'Mahmoud') { 
-                    this.view('admin-dashboard'); this.msg('تم التحقق بنجاح. مرحباً بك.', 'var(--success)', '🔓');
+                    this.view('admin-dashboard');
+                    this.msg('تم التحقق بنجاح. مرحباً بك.', 'var(--success)', '🔓');
                     document.getElementById('adminPass').value = '';
                     const savedTab = sessionStorage.getItem('sov_active_tab') || 'tab-data';
                     this.tab(savedTab);
@@ -694,27 +718,27 @@
                 if (this.settings && this.settings.subjects) {
                     this.settings.subjects.forEach(sub => { const el = document.getElementById(`sub_${sub.id}`); if (el) draft.grades[sub.id] = el.value; });
                 }
-                localStorage.setItem('sov_draft', JSON.stringify(draft));
+                try { localStorage.setItem('sov_draft', JSON.stringify(draft)); } catch(e){}
             },
 
             restoreDraft() {
-                let draftStr = localStorage.getItem('sov_draft');
-                if (draftStr) {
-                    try {
+                try {
+                    let draftStr = localStorage.getItem('sov_draft');
+                    if (draftStr) {
                         let draft = JSON.parse(draftStr);
                         const idInput = document.getElementById('sId'); const nameInput = document.getElementById('sName');
-                        if (idInput && draft.id) idInput.value = draft.id; if (nameInput && draft.name) nameInput.value = draft.name;
+                        if (idInput && draft.id) idInput.value = draft.id;
+                        if (nameInput && draft.name) nameInput.value = draft.name;
                         if (this.settings && this.settings.subjects) {
                             this.settings.subjects.forEach(sub => { const el = document.getElementById(`sub_${sub.id}`); if (el && draft.grades && draft.grades[sub.id] !== undefined) { el.value = draft.grades[sub.id]; } });
                         }
-                    } catch(e) {}
-                }
+                    }
+                } catch(e) {}
                 this.updateLivePreview();
             },
 
             clearDraft() { localStorage.removeItem('sov_draft'); },
 
-            // الحفظ المحلي اللحظي لحماية البيانات من التحديث
             saveInstLocal() {
                 this.settings.inst = { 
                     gov: document.getElementById('iGov').value, dir: document.getElementById('iDir').value, 
@@ -731,21 +755,15 @@
                 this.settings.titles.dashMain = document.getElementById('mDashMain').value || 'إدارة النتائج والبيانات';
                 this.settings.sheetUrl = document.getElementById('sheetUrl').value.trim();
                 
-                this.saveSet(); 
-                this.updateUI();
+                this.saveSet(); this.updateUI();
             },
 
-            // التأخير الذكي لحفظ البيانات وإرسالها للسحابة بصمت
             debouncedSaveInst() {
-                this.saveInstLocal(); 
-
+                this.saveInstLocal();
                 clearTimeout(this.syncTimeout);
                 const ind = document.getElementById('syncIndicator');
                 if(ind) { ind.innerText = 'يتم الحفظ... ⏳'; ind.style.color = 'var(--gold-bright)'; }
-                
-                this.syncTimeout = setTimeout(() => {
-                    this.autoSync(this.data);
-                }, 1500); 
+                this.syncTimeout = setTimeout(() => { this.autoSync(this.data); }, 1500);
             },
 
             updateUI() {
@@ -814,7 +832,7 @@
                         else if (type === 'sec') { newSubjects = [{ id: 's_ar', name: 'اللغة العربية', max: 50 }, { id: 's_en1', name: 'اللغة الأجنبية الأولى', max: 40 }, { id: 's_ma', name: 'الرياضيات', max: 40 }, { id: 's_sci', name: 'العلوم المتكاملة', max: 60 }, { id: 's_hi', name: 'التاريخ', max: 40 }, { id: 's_ph', name: 'الفلسفة والمنطق', max: 40 }]; }
                         this.settings.subjects = newSubjects;
                         this.data.forEach(s => { s.grades = {}; s.total = 0; s.pct = 0; s.rating = 'راسب'; });
-                        this.saveSet(); this.saveData(); this.recalculateAllStudents(); this.renderDynamicSubjects(); 
+                        this.saveSet(); this.saveData(); this.recalculateAllStudents(); this.renderDynamicSubjects();
                         this.autoSync(this.data); 
                         this.msg(`تم تطبيق ${decreeName} بنجاح.`, 'var(--success)', '✅');
                     }
@@ -885,13 +903,21 @@
                 this.updateRankings(); this.saveData(); this.renderTable();
             },
 
-            // ⚡ الدرع الذكي: سحب البيانات مع حماية بياناتك المحلية من المسح
-            async pullFromCloud(silent = false) {
+            // 🚀 دالة السحب الذكية مع قفل الواجهة لضمان الجاهزية للزائر
+            async pullFromCloud() {
                 let url = this.settings.sheetUrl || window.GLOBAL_SHEET_URL;
                 if(!url || !url.includes("script.google.com")) return;
                 
                 const ind = document.getElementById('syncIndicator');
-                if(!silent && ind) { ind.innerText = 'جاري السحب والمطابقة... ⏳'; ind.style.color = 'var(--gold-bright)'; }
+                const searchBtn = document.getElementById('displaySearchBtn');
+                
+                if(ind) { ind.innerText = 'جاري السحب والمطابقة... ⏳'; ind.style.color = 'var(--gold-bright)'; }
+                
+                // قفل البحث للمستخدم العادي حتى الانتهاء
+                if(searchBtn) { 
+                    searchBtn.innerHTML = '⏳ جاري جلب البيانات السحابية...'; 
+                    searchBtn.disabled = true; 
+                }
 
                 try {
                     const response = await fetch(url + "?t=" + new Date().getTime());
@@ -901,10 +927,9 @@
                         const cloudData = result.payload.data;
                         const cloudSettings = result.payload.settings;
                         
-                        let hasCloudData = (cloudData && Array.isArray(cloudData) && cloudData.length > 0);
-                        // يتأكد أن السحابة بداخلها بيانات حقيقية وليست مجرد هيكل فارغ
+                        let hasCloudData = (cloudData && Array.isArray(cloudData) && cloudData.length > 0 && cloudData[0].id);
                         let hasCloudSet = (cloudSettings && Object.keys(cloudSettings).length > 0 && cloudSettings.titles && cloudSettings.titles.main);
-
+                        
                         if(hasCloudData) {
                             this.data = cloudData;
                             this.updateRankings();
@@ -913,7 +938,6 @@
                         }
                         
                         if(hasCloudSet) {
-                            // السحابة ممتلئة فعلاً، نسحبها لجهازك
                             ['inst', 'titles', 'subjects', 'logo', 'signature', 'locked'].forEach(k => {
                                 if(cloudSettings[k] !== undefined) this.settings[k] = cloudSettings[k];
                             });
@@ -923,36 +947,41 @@
                             this.renderDynamicSubjects();
                             this.renderLogo();
                             this.renderSignature();
-                        } else if (!hasCloudSet && this.settings.titles && this.settings.titles.main) {
-                            // الدرع الذكي: السحابة فارغة ولكن لدينا بيانات في جهازك، ارفعها فوراً لتأسيس السحابة
-                            this.autoSync(this.data);
                         }
 
                         if(!hasCloudData && this.data.length > 0) {
+                            // إذا كانت السحابة فارغة ولكن يوجد بيانات محلياً (حدث بعد تصفير السحابة)، أرسلها.
                             this.autoSync(this.data);
                         }
 
                         if(ind) { ind.innerText = `الربط السحابي: متصل نشط ✓`; ind.style.color = 'var(--success)'; }
-                        if(!silent) this.msg('تم التحديث والمزامنة مع السحابة بنجاح', 'var(--success)', '☁️');
+                        this.updateReadyIndicator();
                     }
                 } catch(e) {
-                    if(!silent && ind) { ind.innerText = 'الربط السحابي: لا يوجد اتصال'; ind.style.color = 'var(--danger)'; }
-                    console.warn("Pull Error", e);
+                    if(ind) { ind.innerText = 'استدعاء سحابي: تم الاعتماد على النسخة المحلية'; ind.style.color = 'var(--danger)'; }
+                    console.warn("Pull Error - Using Local Data", e);
+                } finally {
+                    // فتح البحث وإرجاع الزر لحالته الطبيعية
+                    if(searchBtn) { 
+                        searchBtn.innerHTML = `🔍 ${this.settings.titles.searchBtnText || 'عرض الوثيقة المعتمدة'}`; 
+                        searchBtn.disabled = false; 
+                    }
                 }
             },
 
-            // 🚀 محرك الإرسال الخارق: يتخطى حماية المتصفحات (CORS) بنسبة 100%
+            // 🚀 دالة المزامنة المعدلة (إرسال صامت وقوي)
             async autoSync(payload) {
                 let url = this.settings.sheetUrl || window.GLOBAL_SHEET_URL;
                 if(!url) return;
+                
+                const ind = document.getElementById('syncIndicator');
+                if(ind) { ind.innerText = 'جاري الحفظ بالسحابة... ⏳'; ind.style.color = 'var(--gold-bright)'; }
+                
                 try {
-                    const ind = document.getElementById('syncIndicator');
-                    if(ind) { ind.innerText = 'جاري الحفظ بالسحابة... ⏳'; ind.style.color = 'var(--gold-bright)'; }
-                    
-                    // استخدام (no-cors) و (text/plain) يجبر المتصفح على إرسال البيانات دون حجبها
+                    // استخدام text/plain يمنع تعقيدات الـ CORS في متصفحات الهاتف و يضمن الإرسال
                     fetch(url, {
                         method: 'POST', 
-                        mode: 'no-cors',
+                        mode: 'no-cors', 
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ 
                             source: "SovereignSystem", 
@@ -961,7 +990,7 @@
                             settings: this.settings 
                         })
                     }).then(() => {
-                        if(ind) { ind.innerText = 'الربط السحابي: متصل نشط ✓'; ind.style.color = 'var(--success)'; }
+                        if(ind) { ind.innerText = 'تم التحديث بالسحابة بنجاح ✓'; ind.style.color = 'var(--success)'; }
                     }).catch(e => {
                         if(ind) { ind.innerText = 'تم الحفظ محلياً فقط'; ind.style.color = 'var(--danger)'; }
                     });
@@ -970,7 +999,7 @@
 
             forceSync() {
                 if(!this.settings.sheetUrl) return this.msg('يرجى إدخال الرابط أولاً!', 'var(--danger)');
-                this.msg('جاري إرسال حزمة المزامنة...', 'var(--info)', '☁️');
+                this.msg('جاري الدفع الإجباري للسحابة...', 'var(--info)', '☁️');
                 this.autoSync(this.data); 
             },
 
@@ -987,15 +1016,14 @@
                 const file = document.getElementById('importExcel').files[0];
                 if(!file) return this.msg('يرجى اختيار ملف الإكسيل!', 'var(--danger)');
                 if(typeof XLSX === 'undefined') return this.msg('مكتبة XLSX غير متوفرة!', 'var(--danger)');
-
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'});
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]]; const jsonData = XLSX.utils.sheet_to_json(firstSheet, {defval: 0});
                     if(jsonData.length === 0) return this.msg('الملف فارغ!', 'var(--danger)');
 
                     const max = this.getTotalMaxScore(); let importedCount = 0;
-
                     jsonData.forEach(row => {
                         const id = row['رقم الجلوس'] || row['الجلوس'] || row['id']; const name = row['اسم الطالب'] || row['الاسم'] || row['name'];
                         if(!id || !name) return;
@@ -1011,7 +1039,8 @@
 
                         const record = { id: id.toString(), name, grades, total, max, pct, rating };
                         const exIdx = this.data.findIndex(x => x.id === record.id);
-                        if(exIdx > -1) this.data[exIdx] = record; else this.data.push(record);
+                        if(exIdx > -1) this.data[exIdx] = record;
+                        else this.data.push(record);
                         importedCount++;
                     });
                     this.updateRankings(); this.saveData(); this.renderTable(); this.autoSync(this.data);
@@ -1021,7 +1050,8 @@
             },
 
             exportDataJSON() { 
-                const dStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.data)); const a = document.createElement('a'); a.setAttribute("href", dStr); a.setAttribute("download", `Sovereign_Backup.json`); a.click(); 
+                const dStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.data));
+                const a = document.createElement('a'); a.setAttribute("href", dStr); a.setAttribute("download", `Sovereign_Backup.json`); a.click(); 
             },
 
             factoryReset() {
@@ -1029,6 +1059,7 @@
                     () => {
                         this.data = []; this.saveData(); this.renderTable(); this.updateAnalytics(); this.autoSync(this.data);
                         this.msg('تم تصفير قاعدة البيانات بنجاح. النظام جاهز.', 'var(--success)', '🗑️');
+                        this.updateReadyIndicator();
                     }
                 );
             },
@@ -1044,24 +1075,28 @@
                         for(let i=0; i<50; i++) {
                             const id = (startId + i).toString();
                             const name = firstNames[Math.floor(Math.random() * firstNames.length)] + " " + lastNames[Math.floor(Math.random() * lastNames.length)] + " " + lastNames[Math.floor(Math.random() * lastNames.length)];
-                            let grades = {}; let total = 0; const max = this.getTotalMaxScore(); const performanceLevel = Math.random(); 
+                            let grades = {}; let total = 0; const max = this.getTotalMaxScore(); const performanceLevel = Math.random();
                             this.settings.subjects.forEach(sub => {
                                 let score;
-                                if (performanceLevel > 0.7) { score = Math.floor(sub.max * (0.8 + Math.random() * 0.2)); } else if (performanceLevel > 0.3) { score = Math.floor(sub.max * (0.5 + Math.random() * 0.3)); } else { score = Math.floor(sub.max * (0.2 + Math.random() * 0.3)); } 
+                                if (performanceLevel > 0.7) { score = Math.floor(sub.max * (0.8 + Math.random() * 0.2)); } else if (performanceLevel > 0.3) { score = Math.floor(sub.max * (0.5 + Math.random() * 0.3)); } else { 
+                                score = Math.floor(sub.max * (0.2 + Math.random() * 0.3)); } 
                                 if(score > sub.max) score = sub.max; grades[sub.id] = score; total += score;
                             });
                             const pct = max > 0 ? ((total / max) * 100).toFixed(1) : 0; let rating = 'راسب';
-                            if(pct >= 85) rating = 'ممتاز'; else if(pct >= 75) rating = 'جيد جداً'; else if(pct >= 65) rating = 'جيد'; else if(pct >= 50) rating = 'مقبول';
+                            if(pct >= 85) rating = 'ممتاز'; else if(pct >= 75) rating = 'جيد جداً';
+                            else if(pct >= 65) rating = 'جيد'; else if(pct >= 50) rating = 'مقبول';
                             this.data.push({ id, name, grades, total, max, pct, rating });
                         }
-                        this.updateRankings(); this.saveData(); this.renderTable(); this.tab('tab-data'); this.autoSync(this.data);
+                        this.updateRankings();
+                        this.saveData(); this.renderTable(); this.tab('tab-data'); this.autoSync(this.data);
                         this.msg('تم توليد ومزامنة 50 طالب بنجاح.', 'var(--success)', '🧪');
                     }
                 );
             },
 
             edit(idx) {
-                const student = this.data[idx]; document.getElementById('sId').value = student.id; document.getElementById('sName').value = student.name;
+                const student = this.data[idx];
+                document.getElementById('sId').value = student.id; document.getElementById('sName').value = student.name;
                 this.settings.subjects.forEach(sub => { const el = document.getElementById(`sub_${sub.id}`); if(el) { el.value = student.grades[sub.id] || 0; } });
                 this.updateLivePreview(); this.saveDraft(); this.msg('تم جلب بيانات الطالب للتعديل.', 'var(--gold-bright)', '✏️');
                 document.getElementById('sId').focus(); window.scrollTo({top: 0, behavior: 'smooth'});
@@ -1070,9 +1105,9 @@
             saveRecord() {
                 const idInput = document.getElementById('sId'); const nameInput = document.getElementById('sName');
                 const id = idInput ? idInput.value.trim() : ''; const name = nameInput ? nameInput.value.trim() : '';
-                
                 if(!id || !name) {
-                    if(!id && idInput) idInput.classList.add('input-error'); if(!name && nameInput) nameInput.classList.add('input-error');
+                    if(!id && idInput) idInput.classList.add('input-error');
+                    if(!name && nameInput) nameInput.classList.add('input-error');
                     setTimeout(() => { if(idInput) idInput.classList.remove('input-error'); if(nameInput) nameInput.classList.remove('input-error'); }, 1000);
                     return this.msg('البيانات الأساسية مطلوبة!', 'var(--danger)', '⚠️');
                 }
@@ -1083,8 +1118,9 @@
                     if (val < 0) val = 0; if (val > sub.max) val = sub.max; grades[sub.id] = val; total += val;
                 });
                 const max = this.getTotalMaxScore(); const pct = max > 0 ? ((total / max) * 100).toFixed(1) : 0;
-                let rating = 'راسب'; if(pct >= 85) rating = 'ممتاز'; else if(pct >= 75) rating = 'جيد جداً'; else if(pct >= 65) rating = 'جيد'; else if(pct >= 50) rating = 'مقبول';
-
+                let rating = 'راسب'; if(pct >= 85) rating = 'ممتاز'; else if(pct >= 75) rating = 'جيد جداً';
+                else if(pct >= 65) rating = 'جيد'; else if(pct >= 50) rating = 'مقبول';
+                
                 const record = { id, name, grades, total, max, pct, rating };
                 const exIdx = this.data.findIndex(x => x.id === id);
                 if(exIdx > -1) { this.data[exIdx] = record; this.msg('تم تحديث الطالب.', 'var(--success)', '💾'); } 
@@ -1099,7 +1135,13 @@
                 this.updateLivePreview(); if(idInput) idInput.focus();
             },
 
-            updateRankings() { this.data.sort((a, b) => b.total - a.total); this.data.forEach((student, index) => { student.rank = index + 1; }); this.updateAnalytics(); },
+            updateRankings() { 
+                this.data.sort((a, b) => b.total - a.total);
+                this.data.forEach((student, index) => { student.rank = index + 1; }); 
+                this.updateAnalytics();
+                this.updateReadyIndicator();
+            },
+            
             updateAnalytics() {
                 const total = this.data.length; let passed = 0; let sumScore = 0;
                 this.data.forEach(s => { if(s.pct >= 50) passed++; sumScore += s.total; });
@@ -1122,10 +1164,16 @@
             },
 
             toggleLock() { this.settings.locked = !this.settings.locked; this.saveSet(); this.autoSync(this.data); this.updateLockUI(); },
-            updateLockUI() { const s = document.getElementById('systemLockScreen'); const l = document.getElementById('lockStatus'); if(this.settings.locked) { s.style.display = 'flex'; l.innerText = 'مغلق (Lockdown) 🔒'; l.style.color = 'var(--danger)'; } else { s.style.display = 'none'; l.innerText = 'مفتوح للعامة ✅'; l.style.color = 'var(--success)'; } },
+            updateLockUI() { const s = document.getElementById('systemLockScreen'); const l = document.getElementById('lockStatus'); if(this.settings.locked) { s.style.display = 'flex'; l.innerText = 'مغلق (Lockdown) 🔒'; l.style.color = 'var(--danger)'; } else { s.style.display = 'none'; l.innerText = 'مفتوح للعامة ✅'; l.style.color = 'var(--success)'; } 
+            },
             
-            saveSet() { localStorage.setItem('sov_settings', JSON.stringify(this.settings)); },
-            saveData() { localStorage.setItem('sov_data', JSON.stringify(this.data)); localStorage.setItem('sov_data_backup', JSON.stringify(this.data)); },
+            saveSet() { try { localStorage.setItem('sov_settings', JSON.stringify(this.settings)); } catch(e){} },
+            saveData() { 
+                try { 
+                    localStorage.setItem('sov_data', JSON.stringify(this.data)); 
+                    localStorage.setItem('sov_data_backup', JSON.stringify(this.data)); 
+                } catch(e) { this.msg('عفواً مساحة الجهاز غير كافية', 'var(--danger)'); } 
+            },
 
             getRing(label, value, maxVal) {
                 const pct = Math.round(( (value || 0) / (maxVal || 100)) * 100); const offset = 283 - (283 * pct) / 100; const color = pct >= 50 ? 'var(--primary-glow)' : 'var(--danger)';
@@ -1149,6 +1197,7 @@
                 const isPassing = s.pct >= 50; const motivationTitle = isPassing ? "تهنئة وتبريكات بالنجاح والتفوق" : "رسالة دعم وتشجيع"; const motivationText = isPassing ? "نجاحك هو ثمرة اجتهادك المخلص. واصل طريق التميز والمجد بخطى واثقة!" : "التعثر هو محطة للنهوض والانطلاق بقوة أكبر. نحن نثق بقدرتك على تجاوز التحدي والنجاح."; const motivationColor = isPassing ? "var(--success)" : "var(--danger)";
                 const ths = this.settings.subjects.map(sub => `<th>${sub.name} <br><small style="color:#64748b;">(${sub.max})</small></th>`).join(''); const tds = this.settings.subjects.map(sub => `<td>${s.grades[sub.id] || 0}</td>`).join('');
                 let rankBadge = s.rank; if(s.rank === 1) rankBadge = "المركز الأول 🥇"; else if(s.rank === 2) rankBadge = "المركز الثاني 🥈"; else if(s.rank === 3) rankBadge = "المركز الثالث 🥉";
+          
                 const docId = 'SOV-' + new Date().getFullYear() + '-' + s.id + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
                 document.getElementById('certContent').innerHTML = `
                     <img src="${logo}" class="cert-watermark">
