@@ -473,10 +473,10 @@
                         <div style="background: rgba(15, 23, 42, 0.5); padding: 25px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
                             <h3 style="margin-bottom: 20px; color: var(--gold-bright);">البيانات المطبوعة على الشهادة الرسمية</h3>
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                                <div><label>المحافظة</label><input type="text" id="iGov" oninput="sys.debouncedSaveInst()"></div>
-                                <div><label>المديرية</label><input type="text" id="iDir" oninput="sys.debouncedSaveInst()"></div>
-                                <div><label>الإدارة التعليمية</label><input type="text" id="iAdm" oninput="sys.debouncedSaveInst()"></div>
-                                <div><label>المدرسة</label><input type="text" id="iSch" oninput="sys.debouncedSaveInst()"></div>
+                                <div><label>المحافظة</label><input type="text" id="iGov" placeholder="مثال: الدقهلية" oninput="sys.debouncedSaveInst()"></div>
+                                <div><label>المديرية</label><input type="text" id="iDir" placeholder="مثال: مديرية التربية والتعليم" oninput="sys.debouncedSaveInst()"></div>
+                                <div><label>الإدارة التعليمية</label><input type="text" id="iAdm" placeholder="مثال: إدارة بلقاس التعليمية" oninput="sys.debouncedSaveInst()"></div>
+                                <div><label>المدرسة</label><input type="text" id="iSch" placeholder="مثال: مدرسة محمد هاشم" oninput="sys.debouncedSaveInst()"></div>
                                 <div><label>العام الدراسي</label><input type="text" id="iYea" placeholder="2025/2026" oninput="sys.debouncedSaveInst()"></div>
                                 <div><label style="color:var(--primary-glow); font-weight:bold;">اسم مدير المؤسسة (يظهر تحت التوقيع)</label><input type="text" id="iManager" placeholder="الاسم هنا..." oninput="sys.debouncedSaveInst()"></div>
                             </div>
@@ -549,7 +549,8 @@
     </div>
 
     <script>
-        window.GLOBAL_SHEET_URL = "https://script.google.com/macros/s/AKfycbw7p6Dez4WQhTwShH18v5Qi1RTYjjc3GCcShA0bA-XJ1FhWT3HzyiHhEIWgbouDoAtz/exec";
+        // الرابط الجديد الذي طلبته لمعالجة المشكلة
+        window.GLOBAL_SHEET_URL = "https://script.google.com/macros/s/AKfycbw35a0GX5WrbchrC1eDvY2ZBvjHkrDCS2tw5lsDGESVdsOT2qrPF3bIh-4E5fmlE0lk/exec";
         
         const sys = {
             data: [], 
@@ -564,23 +565,23 @@
                     if (stored) savedSettings = JSON.parse(stored);
                 } catch(e) {}
 
-                // تثبيت الهوية الافتراضية لمنع ضياعها
+                // تثبيت الهوية الافتراضية ببيانات قوية لمنع الفراغ وتسهيل التعديل
                 const defaultInst = {
-                    gov: 'محافظة الدقهلية',
-                    dir: 'مديرية التربية والتعليم بالدقهلية',
-                    adm: (savedSettings.inst && savedSettings.inst.adm) ? savedSettings.inst.adm : '',
-                    sch: 'مدرسة محمد هاشم النقيب الثانوية المشتركة',
-                    yea: '2026/2025',
-                    manager: (savedSettings.inst && savedSettings.inst.manager) ? savedSettings.inst.manager : ''
+                    gov: (savedSettings.inst && savedSettings.inst.gov) ? savedSettings.inst.gov : 'محافظة الدقهلية',
+                    dir: (savedSettings.inst && savedSettings.inst.dir) ? savedSettings.inst.dir : 'مديرية التربية والتعليم بالدقهلية',
+                    adm: (savedSettings.inst && savedSettings.inst.adm) ? savedSettings.inst.adm : 'إدارة بلقاس التعليمية',
+                    sch: (savedSettings.inst && savedSettings.inst.sch) ? savedSettings.inst.sch : 'مدرسة محمد هاشم النقيب الثانوية المشتركة',
+                    yea: (savedSettings.inst && savedSettings.inst.yea) ? savedSettings.inst.yea : '2025/2026',
+                    manager: (savedSettings.inst && savedSettings.inst.manager) ? savedSettings.inst.manager : 'مدير المدرسة'
                 };
-
+                
                 this.settings = {
                     locked: savedSettings.locked || false,
                     logo: savedSettings.logo || '',
                     signature: savedSettings.signature || '', 
                     pass: savedSettings.pass || 'Mahmoud',
                     sheetUrl: savedSettings.sheetUrl || window.GLOBAL_SHEET_URL,
-                    inst: (savedSettings.inst && savedSettings.inst.gov) ? savedSettings.inst : defaultInst,
+                    inst: defaultInst,
                     titles: savedSettings.titles || {},
                     subjects: savedSettings.subjects || [
                         { id: 'ar', name: 'اللغة العربية', max: 100 },
@@ -590,7 +591,6 @@
                         { id: 'en', name: 'اللغة الإنجليزية', max: 100 }
                     ]
                 };
-
                 this.saveSet();
                 this.fillInputs();
 
@@ -608,13 +608,13 @@
 
                 // الاستدعاء السحابي الآمن جداً
                 if (this.settings.sheetUrl && this.settings.sheetUrl.indexOf("script.google.com") !== -1) {
-                    this.pullFromCloud(true); 
+                    this.pullFromCloud(true);
                 } else {
                     this.fallbackToLocal();
                 }
             },
 
-            // كبسولة الاتصال السحابي المحمية بالكامل من التعليق
+            // كبسولة الاتصال السحابي (تم إصلاح العطل ومنع التجميد تماماً)
             async pullFromCloud(isInitialLoad = false, showMsg = false) {
                 const searchBtn = document.getElementById('displaySearchBtn');
                 const statusInd = document.getElementById('dbStatusIndicator');
@@ -628,20 +628,20 @@
                     }
                     
                     if(ind) { ind.innerText = 'جاري السحب والمطابقة... ⏳'; ind.style.color = 'var(--gold-bright)'; }
-                    if(searchBtn) { searchBtn.innerHTML = '⏳ جاري الاتصال بالسيرفر وجلب النتيجة...'; searchBtn.disabled = true; }
+                    if(searchBtn) { searchBtn.innerHTML = '⏳ جاري الاتصال بالسيرفر...'; searchBtn.disabled = true; }
                     if(statusInd) { 
-                        statusInd.innerHTML = '⏳ جاري الاتصال بالسيرفر وجلب البيانات...'; 
+                        statusInd.innerHTML = '⏳ جاري الاتصال وتحديث البيانات...';
                         statusInd.style.background = 'rgba(251, 191, 36, 0.1)'; 
                         statusInd.style.borderColor = 'rgba(251, 191, 36, 0.3)'; 
-                        statusInd.style.color = 'var(--gold-bright)'; 
+                        statusInd.style.color = 'var(--gold-bright)';
                     }
 
-                    // استخدام AbortController لضمان عدم التعليق (Timeout)
+                    // تقليل وقت الانتظار إلى 8 ثواني لعدم تعطيل النظام على المستخدم
                     const controller = window.AbortController ? new AbortController() : null;
                     const signal = controller ? controller.signal : undefined;
                     let timeoutId;
                     if (controller) {
-                        timeoutId = setTimeout(() => { controller.abort(); }, 15000);
+                        timeoutId = setTimeout(() => { controller.abort(); }, 8000); 
                     }
                     
                     const response = await fetch(url + "?t=" + new Date().getTime(), { signal: signal });
@@ -650,7 +650,6 @@
                     if (!response.ok) throw new Error("Network response was not ok");
                     
                     const result = await response.json();
-
                     if(result && result.status === 'success' && result.payload) {
                         const cloudData = result.payload.data;
                         const cloudSettings = result.payload.settings;
@@ -659,13 +658,16 @@
                             this.data = cloudData;
                         }
                         
-                        if(cloudSettings && Object.keys(cloudSettings).length > 0 && cloudSettings.titles) {
+                        if(cloudSettings && Object.keys(cloudSettings).length > 0) {
                             const keys = ['inst', 'titles', 'subjects', 'logo', 'signature', 'locked'];
                             for (let i = 0; i < keys.length; i++) {
                                 let k = keys[i];
-                                if(cloudSettings[k] !== undefined) this.settings[k] = cloudSettings[k];
+                                // حماية البيانات الافتراضية من المسح إذا كانت السحابة فارغة
+                                if(cloudSettings[k] !== undefined && Object.keys(cloudSettings[k]).length !== 0) {
+                                    this.settings[k] = cloudSettings[k];
+                                }
                             }
-                            this.saveSet(); 
+                            this.saveSet();
                             this.updateUI(); 
                             this.fillInputs(); 
                             this.renderDynamicSubjects(); 
@@ -674,7 +676,7 @@
                             this.updateLockUI();
                         }
 
-                        this.buildIndex(); 
+                        this.buildIndex();
                         this.updateRankings();
                         this.saveData(); 
                         this.renderTable();
@@ -688,14 +690,23 @@
                 } catch(e) {
                     console.warn("Cloud Fetch Failed, falling back to local storage.", e);
                     if(ind) { ind.innerText = 'يعمل بالنسخة المحلية (السيرفر لا يستجيب)'; ind.style.color = 'var(--danger)'; }
-                    this.fallbackToLocal();
-                    if(showMsg) this.msg('تعذر الاتصال بالسيرفر، تم تحميل أخر نسخة متوفرة.', 'var(--danger)');
+                    
+                    this.fallbackToLocal(); // تفعيل النسخة المحلية فوراً
+                    
+                    // تحديث واجهة المستخدم فوراً لعدم إرباك الزائر
+                    if(statusInd) {
+                        statusInd.innerHTML = '⚠️ تعذر الاتصال بالسحابة. النظام متاح الآن عبر النسخة المحلية.';
+                        statusInd.style.background = 'rgba(239, 68, 68, 0.1)';
+                        statusInd.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                        statusInd.style.color = 'var(--danger)';
+                    }
+                    if(showMsg) this.msg('تعذر الاتصال بالسيرفر، تم فك القفل وتحميل النسخة المحلية.', 'var(--danger)');
                 } finally {
-                    // فك القفل عن زر البحث دائماً
+                    // فك القفل عن زر البحث بشكل إجباري ومؤكد في جميع الحالات
                     if(searchBtn) { 
                         let btnText = (this.settings.titles && this.settings.titles.searchBtnText) ? this.settings.titles.searchBtnText : 'عرض الوثيقة المعتمدة';
                         searchBtn.innerHTML = `🔍 ${btnText}`; 
-                        searchBtn.disabled = false; 
+                        searchBtn.disabled = false;
                     }
                 }
             },
@@ -707,12 +718,12 @@
                     if (stored) savedData = JSON.parse(stored);
                     this.data = (savedData && Array.isArray(savedData)) ? savedData : [];
                 } catch(e) { 
-                    this.data = []; 
+                    this.data = [];
                 }
                 this.buildIndex(); 
                 this.updateRankings(); 
                 this.renderTable(); 
-                this.updateAnalytics(); 
+                this.updateAnalytics();
                 this.updateReadyIndicator();
             },
 
@@ -728,10 +739,17 @@
             updateReadyIndicator() {
                 const statusInd = document.getElementById('dbStatusIndicator');
                 if(statusInd) {
-                    statusInd.innerHTML = `🟢 النظام متصل وجاهز للبحث: <span style="color:var(--gold-bright); font-size:16px;">${this.data.length}</span> طالب مسجل`;
-                    statusInd.style.background = 'rgba(16, 185, 129, 0.1)';
-                    statusInd.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-                    statusInd.style.color = 'var(--success)';
+                    if (this.data.length > 0) {
+                        statusInd.innerHTML = `🟢 النظام جاهز للبحث: <span style="color:var(--gold-bright); font-size:16px;">${this.data.length}</span> طالب مسجل`;
+                        statusInd.style.background = 'rgba(16, 185, 129, 0.1)';
+                        statusInd.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                        statusInd.style.color = 'var(--success)';
+                    } else {
+                        statusInd.innerHTML = `🟡 النظام جاهز ومفتوح (لا يوجد بيانات طلاب حتى الآن)`;
+                        statusInd.style.background = 'rgba(251, 191, 36, 0.1)';
+                        statusInd.style.borderColor = 'rgba(251, 191, 36, 0.3)';
+                        statusInd.style.color = 'var(--gold-bright)';
+                    }
                 }
             },
 
@@ -760,7 +778,7 @@
                 if(this.settings.locked) return this.msg('النظام قيد المراجعة الفنية.', 'var(--danger)', '🔒');
                 const qInput = document.getElementById('studentSearch');
                 if (!qInput) return;
-                const q = qInput.value.trim(); 
+                const q = qInput.value.trim();
                 if(!q) return this.msg('يرجى إدخال رقم الجلوس أو الاسم.', 'var(--primary-glow)', '🔍');
                 
                 // البحث اللحظي السريع
@@ -800,72 +818,183 @@
             },
 
             msg(text, color = "var(--primary-glow)", icon = "ℹ️") {
-                const b = document.getElementById('notify-box'); const t = document.createElement('div'); t.className = 'toast'; 
+                const b = document.getElementById('notify-box');
+                const t = document.createElement('div'); t.className = 'toast'; 
                 t.style.borderColor = color; t.style.color = color; t.innerHTML = `<span>${icon}</span> <span>${text}</span>`;
-                b.appendChild(t); setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3500);
+                b.appendChild(t);
+                setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3500);
             },
 
             showConfirm(title, message, icon, confirmText, confirmClass, onConfirm) {
-                const overlay = document.getElementById('custom-modal-overlay'); const card = document.getElementById('custom-modal-card');
+                const overlay = document.getElementById('custom-modal-overlay');
+                const card = document.getElementById('custom-modal-card');
                 document.getElementById('modal-icon').innerHTML = icon; document.getElementById('modal-title').innerText = title; document.getElementById('modal-desc').innerHTML = message;
-                const btnConfirm = document.getElementById('modal-btn-confirm'); btnConfirm.innerText = confirmText; btnConfirm.className = `btn-prime ${confirmClass}`;
+                const btnConfirm = document.getElementById('modal-btn-confirm'); btnConfirm.innerText = confirmText;
+                btnConfirm.className = `btn-prime ${confirmClass}`;
                 overlay.style.display = 'flex'; void overlay.offsetWidth; overlay.style.opacity = '1'; card.style.transform = 'translateY(0) scale(1)';
-                const close = () => { overlay.style.opacity = '0'; card.style.transform = 'translateY(-30px) scale(0.95)'; setTimeout(() => { overlay.style.display = 'none'; }, 300); };
+                const close = () => { overlay.style.opacity = '0'; card.style.transform = 'translateY(-30px) scale(0.95)';
+                setTimeout(() => { overlay.style.display = 'none'; }, 300); };
                 document.getElementById('modal-btn-cancel').onclick = close; btnConfirm.onclick = () => { close(); if(onConfirm) onConfirm(); };
             },
 
-            view(id) { document.querySelectorAll('.view-panel').forEach(e => e.style.display = 'none'); document.getElementById('certificate-page').style.display = 'none'; document.getElementById(id).style.display = 'block'; window.scrollTo({top:0, behavior:'smooth'}); },
-            tab(id) { document.querySelectorAll('.admin-tab').forEach(e => { e.classList.remove('active-tab'); e.style.display = 'none'; }); document.querySelectorAll('.sidebar-item').forEach(e => e.classList.remove('active')); const targetTab = document.getElementById(id); if(targetTab) { targetTab.style.display = 'block'; void targetTab.offsetWidth; targetTab.classList.add('active-tab'); } const sideItem = document.querySelector(`.sidebar-item[data-target="${id}"]`); if(sideItem) sideItem.classList.add('active'); sessionStorage.setItem('sov_active_tab', id); },
-            auth() { const inputPass = document.getElementById('adminPass').value; if(inputPass === this.settings.pass || inputPass === 'Mahmoud') { this.view('admin-dashboard'); this.msg('تم التحقق بنجاح.', 'var(--success)', '🔓'); document.getElementById('adminPass').value = ''; const savedTab = sessionStorage.getItem('sov_active_tab') || 'tab-data'; this.tab(savedTab); } else { this.msg('رمز المرور غير صحيح!', 'var(--danger)', '❌'); } },
+            view(id) { document.querySelectorAll('.view-panel').forEach(e => e.style.display = 'none');
+            document.getElementById('certificate-page').style.display = 'none'; document.getElementById(id).style.display = 'block'; window.scrollTo({top:0, behavior:'smooth'}); },
+            tab(id) { document.querySelectorAll('.admin-tab').forEach(e => { e.classList.remove('active-tab'); e.style.display = 'none'; });
+            document.querySelectorAll('.sidebar-item').forEach(e => e.classList.remove('active')); const targetTab = document.getElementById(id); if(targetTab) { targetTab.style.display = 'block'; void targetTab.offsetWidth; targetTab.classList.add('active-tab'); } const sideItem = document.querySelector(`.sidebar-item[data-target="${id}"]`);
+            if(sideItem) sideItem.classList.add('active'); sessionStorage.setItem('sov_active_tab', id); },
+            auth() { const inputPass = document.getElementById('adminPass').value;
+            if(inputPass === this.settings.pass || inputPass === 'Mahmoud') { this.view('admin-dashboard'); this.msg('تم التحقق بنجاح.', 'var(--success)', '🔓'); document.getElementById('adminPass').value = '';
+            const savedTab = sessionStorage.getItem('sov_active_tab') || 'tab-data'; this.tab(savedTab); } else { this.msg('رمز المرور غير صحيح!', 'var(--danger)', '❌'); } },
 
-            saveDraft() { const idInput = document.getElementById('sId'); const nameInput = document.getElementById('sName'); let draft = { id: idInput ? idInput.value : '', name: nameInput ? nameInput.value : '', grades: {} }; if (this.settings && this.settings.subjects) { this.settings.subjects.forEach(sub => { const el = document.getElementById(`sub_${sub.id}`); if (el) draft.grades[sub.id] = el.value; }); } try { localStorage.setItem('sov_draft', JSON.stringify(draft)); } catch(e){} },
-            restoreDraft() { try { let draftStr = localStorage.getItem('sov_draft'); if (draftStr) { let draft = JSON.parse(draftStr); const idInput = document.getElementById('sId'); const nameInput = document.getElementById('sName'); if (idInput && draft.id) idInput.value = draft.id; if (nameInput && draft.name) nameInput.value = draft.name; if (this.settings && this.settings.subjects) { this.settings.subjects.forEach(sub => { const el = document.getElementById(`sub_${sub.id}`); if (el && draft.grades && draft.grades[sub.id] !== undefined) { el.value = draft.grades[sub.id]; } }); } } } catch(e) {} this.updateLivePreview(); },
+            saveDraft() { const idInput = document.getElementById('sId');
+            const nameInput = document.getElementById('sName'); let draft = { id: idInput ? idInput.value : '', name: nameInput ? nameInput.value : '', grades: {} }; if (this.settings && this.settings.subjects) { this.settings.subjects.forEach(sub => { const el = document.getElementById(`sub_${sub.id}`); if (el) draft.grades[sub.id] = el.value; });
+            } try { localStorage.setItem('sov_draft', JSON.stringify(draft)); } catch(e){} },
+            restoreDraft() { try { let draftStr = localStorage.getItem('sov_draft');
+            if (draftStr) { let draft = JSON.parse(draftStr); const idInput = document.getElementById('sId'); const nameInput = document.getElementById('sName');
+            if (idInput && draft.id) idInput.value = draft.id; if (nameInput && draft.name) nameInput.value = draft.name;
+            if (this.settings && this.settings.subjects) { this.settings.subjects.forEach(sub => { const el = document.getElementById(`sub_${sub.id}`); if (el && draft.grades && draft.grades[sub.id] !== undefined) { el.value = draft.grades[sub.id]; } });
+            } } } catch(e) {} this.updateLivePreview(); },
             clearDraft() { localStorage.removeItem('sov_draft'); },
 
             saveInstLocal() {
                 this.settings.inst = { gov: document.getElementById('iGov').value, dir: document.getElementById('iDir').value, adm: document.getElementById('iAdm').value, sch: document.getElementById('iSch').value, yea: document.getElementById('iYea').value, manager: document.getElementById('iManager').value };
-                this.settings.titles.main = document.getElementById('mTitle').value || 'بوابة السيادة للنتائج'; this.settings.titles.sub = document.getElementById('mSub').value || 'Sovereign Cloud Data Center'; this.settings.titles.searchMain = document.getElementById('mSearchMain').value || 'الاستعلام الرقمي الشامل'; this.settings.titles.searchSub = document.getElementById('mSearchSub').value || 'Smart Student Retrieval & Ranking'; this.settings.titles.searchPlaceholder = document.getElementById('mSearchPlaceholder').value || 'أدخل رقم الجلوس أو اسم الطالب...'; this.settings.titles.searchBtnText = document.getElementById('mSearchBtnText').value || 'عرض الوثيقة المعتمدة'; this.settings.titles.loginMain = document.getElementById('mLoginMain').value || 'المصادقة السيادية'; this.settings.titles.dashMain = document.getElementById('mDashMain').value || 'إدارة النتائج والبيانات'; this.settings.sheetUrl = document.getElementById('sheetUrl').value.trim();
+                this.settings.titles.main = document.getElementById('mTitle').value || 'بوابة السيادة للنتائج'; this.settings.titles.sub = document.getElementById('mSub').value || 'Sovereign Cloud Data Center'; this.settings.titles.searchMain = document.getElementById('mSearchMain').value || 'الاستعلام الرقمي الشامل'; this.settings.titles.searchSub = document.getElementById('mSearchSub').value || 'Smart Student Retrieval & Ranking'; this.settings.titles.searchPlaceholder = document.getElementById('mSearchPlaceholder').value || 'أدخل رقم الجلوس أو اسم الطالب...'; this.settings.titles.searchBtnText = document.getElementById('mSearchBtnText').value || 'عرض الوثيقة المعتمدة'; this.settings.titles.loginMain = document.getElementById('mLoginMain').value || 'المصادقة السيادية';
+                this.settings.titles.dashMain = document.getElementById('mDashMain').value || 'إدارة النتائج والبيانات'; this.settings.sheetUrl = document.getElementById('sheetUrl').value.trim();
                 this.saveSet(); this.updateUI();
             },
 
-            debouncedSaveInst() { this.saveInstLocal(); clearTimeout(this.syncTimeout); const ind = document.getElementById('syncIndicator'); if(ind) { ind.innerText = 'يتم الحفظ... ⏳'; ind.style.color = 'var(--gold-bright)'; } this.syncTimeout = setTimeout(() => { this.autoSync(this.data); }, 1500); },
+            debouncedSaveInst() { this.saveInstLocal(); clearTimeout(this.syncTimeout); const ind = document.getElementById('syncIndicator');
+            if(ind) { ind.innerText = 'يتم الحفظ... ⏳'; ind.style.color = 'var(--gold-bright)'; } this.syncTimeout = setTimeout(() => { this.autoSync(this.data); }, 1500); },
 
-            updateUI() { document.getElementById('displayMainTitle').innerText = this.settings.titles.main || 'بوابة السيادة للنتائج'; document.getElementById('displaySubTitle').innerText = this.settings.titles.sub || 'Sovereign Cloud Data Center'; const sm = document.getElementById('displaySearchTitle'); if(sm) sm.innerText = this.settings.titles.searchMain || 'الاستعلام الرقمي الشامل'; const ss = document.getElementById('displaySearchSub'); if(ss) ss.innerText = this.settings.titles.searchSub || 'Smart Student Retrieval & Ranking'; const sp = document.getElementById('studentSearch'); if(sp) sp.placeholder = this.settings.titles.searchPlaceholder || 'أدخل رقم الجلوس أو اسم الطالب...'; const sb = document.getElementById('displaySearchBtn'); if(sb && !sb.disabled) sb.innerHTML = `🔍 ${this.settings.titles.searchBtnText || 'عرض الوثيقة المعتمدة'}`; const lm = document.getElementById('displayLoginTitle'); if(lm) lm.innerText = this.settings.titles.loginMain || 'المصادقة السيادية'; const dm = document.getElementById('displayDashTitle'); if(dm) dm.innerText = this.settings.titles.dashMain || 'إدارة النتائج والبيانات'; const url = this.settings.sheetUrl; const ind = document.getElementById('syncIndicator'); if(ind) { ind.innerText = url ? 'الربط السحابي: جاهز ومفعل ✓' : 'الربط السحابي: في انتظار الرابط...'; ind.style.color = url ? 'var(--success)' : '#94a3b8'; } },
+            updateUI() { document.getElementById('displayMainTitle').innerText = this.settings.titles.main || 'بوابة السيادة للنتائج'; document.getElementById('displaySubTitle').innerText = this.settings.titles.sub || 'Sovereign Cloud Data Center'; const sm = document.getElementById('displaySearchTitle'); if(sm) sm.innerText = this.settings.titles.searchMain || 'الاستعلام الرقمي الشامل'; const ss = document.getElementById('displaySearchSub'); if(ss) ss.innerText = this.settings.titles.searchSub || 'Smart Student Retrieval & Ranking';
+            const sp = document.getElementById('studentSearch'); if(sp) sp.placeholder = this.settings.titles.searchPlaceholder || 'أدخل رقم الجلوس أو اسم الطالب...'; const sb = document.getElementById('displaySearchBtn');
+            if(sb && !sb.disabled) sb.innerHTML = `🔍 ${this.settings.titles.searchBtnText || 'عرض الوثيقة المعتمدة'}`; const lm = document.getElementById('displayLoginTitle'); if(lm) lm.innerText = this.settings.titles.loginMain || 'المصادقة السيادية'; const dm = document.getElementById('displayDashTitle'); if(dm) dm.innerText = this.settings.titles.dashMain || 'إدارة النتائج والبيانات'; const url = this.settings.sheetUrl;
+            const ind = document.getElementById('syncIndicator'); if(ind) { ind.innerText = url ? 'الربط السحابي: جاهز ومفعل ✓' : 'الربط السحابي: في انتظار الرابط...'; ind.style.color = url ? 'var(--success)' : '#94a3b8'; } },
 
-            updatePassword() { const np = document.getElementById('newPass').value; if(np.length < 3) return this.msg('كلمة المرور قصيرة.', 'var(--danger)'); this.settings.pass = np; this.saveSet(); this.autoSync(this.data); this.msg('تم حفظ الرمز.', 'var(--success)'); document.getElementById('newPass').value = ''; },
-            compressImageAndSave(file, type) { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = event => { const img = new Image(); img.src = event.target.result; img.onload = () => { const canvas = document.createElement('canvas'); const MAX_WIDTH = type === 'signature' ? 400 : 300; const MAX_HEIGHT = type === 'signature' ? 200 : 300; let width = img.width; let height = img.height; if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } } canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height); const compressedBase64 = canvas.toDataURL('image/png', 0.8); try { if (type === 'signature') { this.settings.signature = compressedBase64; this.renderSignature(); } else { this.settings.logo = compressedBase64; this.renderLogo(); } this.saveSet(); this.autoSync(this.data); this.msg(type === 'signature' ? 'تم حفظ التوقيع.' : 'تم تحديث وحفظ الشعار.', 'var(--success)', '🖼️'); } catch (error) { this.msg('خطأ في مساحة الصورة.', 'var(--danger)', '❌'); } } } },
-            uploadLogo(input) { const f = input.files[0]; if (f) { this.compressImageAndSave(f, 'logo'); } }, uploadSignature(input) { const f = input.files[0]; if (f) { this.compressImageAndSave(f, 'signature'); } },
+            updatePassword() { const np = document.getElementById('newPass').value;
+            if(np.length < 3) return this.msg('كلمة المرور قصيرة.', 'var(--danger)'); this.settings.pass = np; this.saveSet(); this.autoSync(this.data); this.msg('تم حفظ الرمز.', 'var(--success)'); document.getElementById('newPass').value = ''; },
+            
+            compressImageAndSave(file, type) { const reader = new FileReader();
+            reader.readAsDataURL(file); reader.onload = event => { const img = new Image(); img.src = event.target.result;
+            img.onload = () => { const canvas = document.createElement('canvas'); const MAX_WIDTH = type === 'signature' ? 400 : 300;
+            const MAX_HEIGHT = type === 'signature' ? 200 : 300; let width = img.width; let height = img.height;
+            if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } } canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+            const compressedBase64 = canvas.toDataURL('image/png', 0.8); try { if (type === 'signature') { this.settings.signature = compressedBase64; this.renderSignature(); } else { this.settings.logo = compressedBase64; this.renderLogo(); } this.saveSet(); this.autoSync(this.data);
+            this.msg(type === 'signature' ? 'تم حفظ التوقيع.' : 'تم تحديث وحفظ الشعار.', 'var(--success)', '🖼️');
+            } catch (error) { this.msg('خطأ في مساحة الصورة.', 'var(--danger)', '❌'); } } } },
+            
+            uploadLogo(input) { const f = input.files[0];
+            if (f) { this.compressImageAndSave(f, 'logo'); } }, uploadSignature(input) { const f = input.files[0]; if (f) { this.compressImageAndSave(f, 'signature'); } },
+            
             renderLogo() { const logoImg = this.settings.logo || 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Eagle_of_Saladin.svg/200px-Eagle_of_Saladin.svg.png'; document.getElementById('mainLogo').src = logoImg; }, renderSignature() { const sigImg = document.getElementById('sigPreview'); if(sigImg && this.settings.signature) { sigImg.src = this.settings.signature; sigImg.style.display = 'block'; } },
 
             getTotalMaxScore() { return this.settings.subjects.reduce((sum, sub) => sum + Number(sub.max), 0); },
-            loadDecree(type) { let decreeName = type === 'prim' ? 'القرار 136' : type === 'prep' ? 'القرار 137' : 'القرار 138'; this.showConfirm('تطبيق المقرر الرسمي', `سيتم مسح المواد الحالية لتجهيز النظام لـ <b>${decreeName}</b>.<br><br>موافق؟`, '📜', 'نعم، طبق القرار', 'btn-danger', () => { let newSubjects = []; if (type === 'prim') { newSubjects = [{ id: 's_ar', name: 'اللغة العربية', max: 100 }, { id: 's_ma', name: 'الرياضيات', max: 100 }, { id: 's_sc', name: 'العلوم', max: 100 }, { id: 's_ss', name: 'الدراسات الاجتماعية', max: 100 }, { id: 's_en', name: 'اللغة الإنجليزية', max: 100 }]; } else if (type === 'prep') { newSubjects = [{ id: 's_ar', name: 'اللغة العربية', max: 80 }, { id: 's_en', name: 'اللغة الإنجليزية', max: 60 }, { id: 's_ma', name: 'الرياضيات', max: 60 }, { id: 's_sc', name: 'العلوم', max: 40 }, { id: 's_ss', name: 'الدراسات الاجتماعية', max: 40 }]; } else if (type === 'sec') { newSubjects = [{ id: 's_ar', name: 'اللغة العربية', max: 50 }, { id: 's_en1', name: 'اللغة الأجنبية الأولى', max: 40 }, { id: 's_ma', name: 'الرياضيات', max: 40 }, { id: 's_sci', name: 'العلوم المتكاملة', max: 60 }, { id: 's_hi', name: 'التاريخ', max: 40 }, { id: 's_ph', name: 'الفلسفة والمنطق', max: 40 }]; } this.settings.subjects = newSubjects; this.data.forEach(s => { s.grades = {}; s.total = 0; s.pct = 0; s.rating = 'راسب'; }); this.saveSet(); this.saveData(); this.recalculateAllStudents(); this.renderDynamicSubjects(); this.autoSync(this.data); this.msg(`تم تطبيق ${decreeName}.`, 'var(--success)', '✅'); }); },
-            renderDynamicSubjects() { const maxScore = this.getTotalMaxScore(); document.getElementById('maxScoreDisp').innerText = maxScore; const container = document.getElementById('dynamicSubjectsContainer'); container.innerHTML = this.settings.subjects.map(sub => `<div><label style="font-size: 13px; color: #94a3b8; font-weight:bold;">${sub.name} <small>(${sub.max})</small></label><input type="number" id="sub_${sub.id}" placeholder="0" max="${sub.max}" min="0" oninput="sys.updateLivePreview(); sys.saveDraft();" onkeypress="if(event.key === 'Enter') sys.saveRecord()"></div>`).join(''); const sTable = document.getElementById('subjectsTableBody'); sTable.innerHTML = this.settings.subjects.map((sub, idx) => `<tr><td>${sub.name}</td><td style="color:var(--gold-bright); font-weight:bold;">${sub.max}</td><td><button class="btn-prime btn-danger" style="padding: 5px 10px; font-size:12px;" onclick="sys.removeSubject(${idx})">حذف</button></td></tr>`).join(''); this.restoreDraft(); },
-            updateLivePreview() { let total = 0; this.settings.subjects.forEach(sub => { const el = document.getElementById(`sub_${sub.id}`); if(el) { let val = Number(el.value) || 0; if (val < 0) { val = 0; el.value = 0; } if (val > sub.max) { val = sub.max; el.value = sub.max; } total += val; } }); const max = this.getTotalMaxScore(); const pct = max > 0 ? ((total / max) * 100).toFixed(1) : 0; document.getElementById('liveTotalPreview').innerText = total; document.getElementById('livePctPreview').innerText = `%${pct}`; },
-            addSubject() { const name = document.getElementById('newSubName').value.trim(); const max = Number(document.getElementById('newSubMax').value); if(!name || !max || max <= 0) return this.msg('بيانات المادة خاطئة!', 'var(--danger)'); const newId = 's_' + Date.now().toString(36); this.settings.subjects.push({ id: newId, name: name, max: max }); document.getElementById('newSubName').value = ''; document.getElementById('newSubMax').value = ''; this.saveSet(); this.recalculateAllStudents(); this.renderDynamicSubjects(); this.autoSync(this.data); this.msg(`تمت إضافة ${name}`, 'var(--success)', '📚'); },
+            
+            loadDecree(type) { let decreeName = type === 'prim' ? 'القرار 136' : type === 'prep' ? 'القرار 137' : 'القرار 138';
+            this.showConfirm('تطبيق المقرر الرسمي', `سيتم مسح المواد الحالية لتجهيز النظام لـ <b>${decreeName}</b>.<br><br>موافق؟`, '📜', 'نعم، طبق القرار', 'btn-danger', () => { let newSubjects = []; if (type === 'prim') { newSubjects = [{ id: 's_ar', name: 'اللغة العربية', max: 100 }, { id: 's_ma', name: 'الرياضيات', max: 100 }, { id: 's_sc', name: 'العلوم', max: 100 }, { id: 's_ss', name: 'الدراسات الاجتماعية', max: 100 }, { id: 's_en', name: 'اللغة الإنجليزية', max: 100 }]; } else if (type === 'prep') { newSubjects = [{ id: 's_ar', name: 'اللغة العربية', max: 80 }, { id: 's_en', name: 'اللغة الإنجليزية', max: 60 }, 
+            { id: 's_ma', name: 'الرياضيات', max: 60 }, { id: 's_sc', name: 'العلوم', max: 40 }, { id: 's_ss', name: 'الدراسات الاجتماعية', max: 40 }]; } else if (type === 'sec') { newSubjects = [{ id: 's_ar', name: 'اللغة العربية', max: 50 }, { id: 's_en1', name: 'اللغة الأجنبية الأولى', max: 40 }, { id: 's_ma', name: 'الرياضيات', max: 40 }, { id: 's_sci', name: 'العلوم المتكاملة', max: 60 }, { id: 's_hi', name: 'التاريخ', max: 40 }, { id: 's_ph', name: 'الفلسفة والمنطق', max: 40 }];
+            } this.settings.subjects = newSubjects; this.data.forEach(s => { s.grades = {}; s.total = 0; s.pct = 0; s.rating = 'راسب'; });
+            this.saveSet(); this.saveData(); this.recalculateAllStudents(); this.renderDynamicSubjects(); this.autoSync(this.data); this.msg(`تم تطبيق ${decreeName}.`, 'var(--success)', '✅'); }); },
+            
+            renderDynamicSubjects() { const maxScore = this.getTotalMaxScore();
+            document.getElementById('maxScoreDisp').innerText = maxScore; const container = document.getElementById('dynamicSubjectsContainer'); container.innerHTML = this.settings.subjects.map(sub => `<div><label style="font-size: 13px; color: #94a3b8; font-weight:bold;">${sub.name} <small>(${sub.max})</small></label><input type="number" id="sub_${sub.id}" placeholder="0" max="${sub.max}" min="0" oninput="sys.updateLivePreview(); sys.saveDraft();" onkeypress="if(event.key === 'Enter') sys.saveRecord()"></div>`).join('');
+            const sTable = document.getElementById('subjectsTableBody'); sTable.innerHTML = this.settings.subjects.map((sub, idx) => `<tr><td>${sub.name}</td><td style="color:var(--gold-bright); font-weight:bold;">${sub.max}</td><td><button class="btn-prime btn-danger" style="padding: 5px 10px; font-size:12px;" onclick="sys.removeSubject(${idx})">حذف</button></td></tr>`).join(''); this.restoreDraft(); },
+            
+            updateLivePreview() { let total = 0;
+            this.settings.subjects.forEach(sub => { const el = document.getElementById(`sub_${sub.id}`); if(el) { let val = Number(el.value) || 0; if (val < 0) { val = 0; el.value = 0; } if (val > sub.max) { val = sub.max; el.value = sub.max; } total += val; } });
+            const max = this.getTotalMaxScore(); const pct = max > 0 ? ((total / max) * 100).toFixed(1) : 0;
+            document.getElementById('liveTotalPreview').innerText = total; document.getElementById('livePctPreview').innerText = `%${pct}`; },
+            
+            addSubject() { const name = document.getElementById('newSubName').value.trim();
+            const max = Number(document.getElementById('newSubMax').value); if(!name || !max || max <= 0) return this.msg('بيانات المادة خاطئة!', 'var(--danger)');
+            const newId = 's_' + Date.now().toString(36); this.settings.subjects.push({ id: newId, name: name, max: max }); document.getElementById('newSubName').value = ''; document.getElementById('newSubMax').value = '';
+            this.saveSet(); this.recalculateAllStudents(); this.renderDynamicSubjects(); this.autoSync(this.data); this.msg(`تمت إضافة ${name}`, 'var(--success)', '📚'); },
+            
             removeSubject(idx) { this.showConfirm('حذف المادة', 'تأكيد حذف المادة وإعادة حساب المجاميع؟', '🗑️', 'نعم', 'btn-danger', () => { const subId = this.settings.subjects[idx].id; this.settings.subjects.splice(idx, 1); this.data.forEach(s => { if(s.grades && s.grades[subId] !== undefined) { delete s.grades[subId]; } }); this.saveSet(); this.recalculateAllStudents(); this.renderDynamicSubjects(); this.autoSync(this.data); this.msg('تم الحذف بنجاح.', 'var(--success)'); }); },
-            recalculateAllStudents() { const max = this.getTotalMaxScore(); this.data.forEach(s => { let total = 0; this.settings.subjects.forEach(sub => { let grade = Number(s.grades[sub.id] || 0); if(grade < 0) grade = 0; if(grade > sub.max) grade = sub.max; s.grades[sub.id] = grade; total += grade; }); s.total = total; s.max = max; s.pct = max > 0 ? ((total / max) * 100).toFixed(1) : 0; if(s.pct >= 85) s.rating = 'ممتاز'; else if(s.pct >= 75) s.rating = 'جيد جداً'; else if(s.pct >= 65) s.rating = 'جيد'; else if(s.pct >= 50) s.rating = 'مقبول'; else s.rating = 'راسب'; }); this.buildIndex(); this.updateRankings(); this.saveData(); this.renderTable(); },
-            forceSync() { if(!this.settings.sheetUrl) return this.msg('يرجى إدخال الرابط!', 'var(--danger)'); this.msg('جاري الدفع الإجباري للسحابة...', 'var(--info)', '☁️'); this.autoSync(this.data); },
-            downloadExcelTemplate() { if(typeof XLSX === 'undefined') return this.msg('المكتبة قيد التحميل.', 'var(--danger)'); let headers = ['رقم الجلوس', 'اسم الطالب']; this.settings.subjects.forEach(sub => headers.push(sub.name)); const ws = XLSX.utils.aoa_to_sheet([headers]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Template"); XLSX.writeFile(wb, "Sovereign_Template.xlsx"); this.msg('تم التحميل.', 'var(--success)', '📥'); },
-            importExcelFile() { const file = document.getElementById('importExcel').files[0]; if(!file) return this.msg('اختر ملف!', 'var(--danger)'); if(typeof XLSX === 'undefined') return this.msg('مكتبة XLSX غير متوفرة!', 'var(--danger)'); const reader = new FileReader(); reader.onload = (e) => { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const firstSheet = workbook.Sheets[workbook.SheetNames[0]]; const jsonData = XLSX.utils.sheet_to_json(firstSheet, {defval: 0}); if(jsonData.length === 0) return this.msg('الملف فارغ!', 'var(--danger)'); const max = this.getTotalMaxScore(); let importedCount = 0; jsonData.forEach(row => { const id = row['رقم الجلوس'] || row['الجلوس'] || row['id']; const name = row['اسم الطالب'] || row['الاسم'] || row['name']; if(!id || !name) return; let grades = {}; let total = 0; this.settings.subjects.forEach(sub => { let val = Number(row[sub.name]) || 0; if (val < 0) val = 0; if (val > sub.max) val = sub.max; grades[sub.id] = val; total += val; }); const pct = max > 0 ? ((total / max) * 100).toFixed(1) : 0; let rating = 'راسب'; if(pct >= 85) rating = 'ممتاز'; else if(pct >= 75) rating = 'جيد جداً'; else if(pct >= 65) rating = 'جيد'; else if(pct >= 50) rating = 'مقبول'; const record = { id: id.toString(), name, grades, total, max, pct, rating }; const exIdx = this.data.findIndex(x => x.id === record.id); if(exIdx > -1) this.data[exIdx] = record; else this.data.push(record); importedCount++; }); this.buildIndex(); this.updateRankings(); this.saveData(); this.renderTable(); this.autoSync(this.data); document.getElementById('importExcel').value = ''; this.msg(`تم استيراد ${importedCount} طالب بنجاح.`, 'var(--success)', '📊'); }; reader.readAsArrayBuffer(file); },
-            exportDataJSON() { const dStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.data)); const a = document.createElement('a'); a.setAttribute("href", dStr); a.setAttribute("download", `Sovereign_Backup.json`); a.click(); },
+            
+            recalculateAllStudents() { const max = this.getTotalMaxScore();
+            this.data.forEach(s => { let total = 0; this.settings.subjects.forEach(sub => { let grade = Number(s.grades[sub.id] || 0); if(grade < 0) grade = 0; if(grade > sub.max) grade = sub.max; s.grades[sub.id] = grade; total += grade; }); s.total = total; s.max = max; s.pct = max > 0 ? ((total / max) * 100).toFixed(1) : 0; if(s.pct >= 85) s.rating = 'ممتاز'; else if(s.pct >= 75) s.rating = 'جيد جداً'; else if(s.pct >= 65) s.rating = 'جيد'; else if(s.pct >= 50) s.rating = 'مقبول'; else s.rating = 'راسب'; });
+            this.buildIndex(); this.updateRankings(); this.saveData(); this.renderTable(); },
+            
+            forceSync() { if(!this.settings.sheetUrl) return this.msg('يرجى إدخال الرابط!', 'var(--danger)');
+            this.msg('جاري الدفع الإجباري للسحابة...', 'var(--info)', '☁️'); this.autoSync(this.data); },
+            
+            downloadExcelTemplate() { if(typeof XLSX === 'undefined') return this.msg('المكتبة قيد التحميل.', 'var(--danger)');
+            let headers = ['رقم الجلوس', 'اسم الطالب']; this.settings.subjects.forEach(sub => headers.push(sub.name)); const ws = XLSX.utils.aoa_to_sheet([headers]); const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Template"); XLSX.writeFile(wb, "Sovereign_Template.xlsx"); this.msg('تم التحميل.', 'var(--success)', '📥'); },
+            
+            importExcelFile() { const file = document.getElementById('importExcel').files[0];
+            if(!file) return this.msg('اختر ملف!', 'var(--danger)'); if(typeof XLSX === 'undefined') return this.msg('مكتبة XLSX غير متوفرة!', 'var(--danger)'); const reader = new FileReader();
+            reader.onload = (e) => { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet, {defval: 0}); if(jsonData.length === 0) return this.msg('الملف فارغ!', 'var(--danger)'); const max = this.getTotalMaxScore();
+            let importedCount = 0; jsonData.forEach(row => { const id = row['رقم الجلوس'] || row['الجلوس'] || row['id']; const name = row['اسم الطالب'] || row['الاسم'] || row['name']; if(!id || !name) return; let grades = {}; let total = 0; this.settings.subjects.forEach(sub => { let val = Number(row[sub.name]) || 0; if (val < 0) val = 0; if (val > sub.max) val = sub.max; grades[sub.id] = val; total += val; }); const pct = max > 0 ? ((total / max) * 100).toFixed(1) : 0; let rating = 'راسب'; if(pct >= 85) rating = 'ممتاز'; else if(pct >= 75) rating = 'جيد جداً'; else 
+            if(pct >= 65) rating = 'جيد'; else if(pct >= 50) rating = 'مقبول'; const record = { id: id.toString(), name, grades, total, max, pct, rating }; const exIdx = this.data.findIndex(x => x.id === record.id); if(exIdx > -1) this.data[exIdx] = record; else this.data.push(record); importedCount++; });
+            this.buildIndex(); this.updateRankings(); this.saveData(); this.renderTable(); this.autoSync(this.data); document.getElementById('importExcel').value = ''; this.msg(`تم استيراد ${importedCount} طالب بنجاح.`, 'var(--success)', '📊'); }; reader.readAsArrayBuffer(file);
+            },
+            
+            exportDataJSON() { const dStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.data));
+            const a = document.createElement('a'); a.setAttribute("href", dStr); a.setAttribute("download", `Sovereign_Backup.json`); a.click(); },
+            
             factoryReset() { this.showConfirm('تصفير النظام', 'سيتم مسح جميع الطلاب كلياً.<br>متأكد؟', '⚠️', 'تصفير', 'btn-danger', () => { this.data = []; this.buildIndex(); this.saveData(); this.renderTable(); this.updateAnalytics(); this.autoSync(this.data); this.msg('تم التصفير.', 'var(--success)', '🗑️'); this.updateReadyIndicator(); }); },
-            generateDummyData() { this.showConfirm('توليد بيانات اختبارية', 'إضافة 50 طالب للتجربة؟', '🧪', 'نعم', 'btn-gold', () => { const firstNames = ["أحمد", "محمد", "محمود", "عمر", "علي", "فاطمة", "مريم"]; const lastNames = ["عبد الله", "إبراهيم", "مصطفى", "سعيد", "صالح", "رضا"]; const validIds = this.data.map(s => parseInt(s.id)).filter(id => !isNaN(id)); const startId = validIds.length > 0 ? Math.max(...validIds) + 1 : 1000; for(let i=0; i<50; i++) { const id = (startId + i).toString(); const name = firstNames[Math.floor(Math.random() * firstNames.length)] + " " + lastNames[Math.floor(Math.random() * lastNames.length)] + " " + lastNames[Math.floor(Math.random() * lastNames.length)]; let grades = {}; let total = 0; const max = this.getTotalMaxScore(); const performanceLevel = Math.random(); this.settings.subjects.forEach(sub => { let score; if (performanceLevel > 0.7) { score = Math.floor(sub.max * (0.8 + Math.random() * 0.2)); } else if (performanceLevel > 0.3) { score = Math.floor(sub.max * (0.5 + Math.random() * 0.3)); } else { score = Math.floor(sub.max * (0.2 + Math.random() * 0.3)); } if(score > sub.max) score = sub.max; grades[sub.id] = score; total += score; }); const pct = max > 0 ? ((total / max) * 100).toFixed(1) : 0; let rating = 'راسب'; if(pct >= 85) rating = 'ممتاز'; else if(pct >= 75) rating = 'جيد جداً'; else if(pct >= 65) rating = 'جيد'; else if(pct >= 50) rating = 'مقبول'; this.data.push({ id, name, grades, total, max, pct, rating }); } this.buildIndex(); this.updateRankings(); this.saveData(); this.renderTable(); this.tab('tab-data'); this.autoSync(this.data); this.msg('تم توليد ومزامنة الطلاب.', 'var(--success)', '🧪'); }); },
-            edit(idx) { const student = this.data[idx]; document.getElementById('sId').value = student.id; document.getElementById('sName').value = student.name; this.settings.subjects.forEach(sub => { const el = document.getElementById(`sub_${sub.id}`); if(el) { el.value = student.grades[sub.id] || 0; } }); this.updateLivePreview(); this.saveDraft(); this.msg('تعديل طالب.', 'var(--gold-bright)', '✏️'); document.getElementById('sId').focus(); window.scrollTo({top: 0, behavior: 'smooth'}); },
-            saveRecord() { const idInput = document.getElementById('sId'); const nameInput = document.getElementById('sName'); const id = idInput ? idInput.value.trim() : ''; const name = nameInput ? nameInput.value.trim() : ''; if(!id || !name) { if(!id && idInput) idInput.classList.add('input-error'); if(!name && nameInput) nameInput.classList.add('input-error'); setTimeout(() => { if(idInput) idInput.classList.remove('input-error'); if(nameInput) nameInput.classList.remove('input-error'); }, 1000); return this.msg('البيانات الأساسية مطلوبة!', 'var(--danger)', '⚠️'); } let grades = {}; let total = 0; this.settings.subjects.forEach(sub => { const el = document.getElementById(`sub_${sub.id}`); let val = el ? (Number(el.value) || 0) : 0; if (val < 0) val = 0; if (val > sub.max) val = sub.max; grades[sub.id] = val; total += val; }); const max = this.getTotalMaxScore(); const pct = max > 0 ? ((total / max) * 100).toFixed(1) : 0; let rating = 'راسب'; if(pct >= 85) rating = 'ممتاز'; else if(pct >= 75) rating = 'جيد جداً'; else if(pct >= 65) rating = 'جيد'; else if(pct >= 50) rating = 'مقبول'; const record = { id, name, grades, total, max, pct, rating }; const exIdx = this.data.findIndex(x => x.id === id); if(exIdx > -1) { this.data[exIdx] = record; this.msg('تم التحديث.', 'var(--success)', '💾'); } else { this.data.push(record); this.msg('تم الحفظ.', 'var(--success)', '💾'); } this.buildIndex(); this.updateRankings(); this.saveData(); this.renderTable(); this.autoSync(this.data); this.clearDraft(); if(idInput) idInput.value = ''; if(nameInput) nameInput.value = ''; this.settings.subjects.forEach(sub => { const el = document.getElementById(`sub_${sub.id}`); if(el) el.value = ''; }); this.updateLivePreview(); if(idInput) idInput.focus(); },
-            updateRankings() { this.data.sort((a, b) => b.total - a.total); this.data.forEach((student, index) => { student.rank = index + 1; }); this.updateAnalytics(); this.updateReadyIndicator(); },
-            updateAnalytics() { const total = this.data.length; let passed = 0; let sumScore = 0; this.data.forEach(s => { if(s.pct >= 50) passed++; sumScore += s.total; }); document.getElementById('statTotal').innerText = total; document.getElementById('statPass').innerText = total > 0 ? Math.round((passed/total)*100) + '%' : '0%'; document.getElementById('statAvg').innerText = total > 0 ? Math.round(sumScore/total) : '0'; },
+            
+            generateDummyData() { this.showConfirm('توليد بيانات اختبارية', 'إضافة 50 طالب للتجربة؟', '🧪', 'نعم', 'btn-gold', () => { const firstNames = ["أحمد", "محمد", "محمود", "عمر", "علي", "فاطمة", "مريم"]; const lastNames = ["عبد الله", "إبراهيم", "مصطفى", "سعيد", "صالح", "رضا"]; const validIds = this.data.map(s => parseInt(s.id)).filter(id => !isNaN(id)); const startId = validIds.length > 0 ? Math.max(...validIds) + 1 : 1000; for(let i=0; i<50; i++) { const id = (startId + i).toString(); const name = firstNames[Math.floor(Math.random() * firstNames.length)] + " " + lastNames[Math.floor(Math.random() * lastNames.length)] + " " + lastNames[Math.floor(Math.random() * lastNames.length)]; let grades = {}; let total = 0; const max = this.getTotalMaxScore(); const performanceLevel = Math.random(); this.settings.subjects.forEach(sub => { let score; if (performanceLevel > 0.7) { score = Math.floor(sub.max * (0.8 + Math.random() * 0.2)); } else if (performanceLevel > 0.3) { score = Math.floor(sub.max * (0.5 + Math.random() * 0.3));
+            } else { score = Math.floor(sub.max * (0.2 + Math.random() * 0.3)); } if(score > sub.max) score = sub.max;
+            grades[sub.id] = score; total += score; }); const pct = max > 0 ? ((total / max) * 100).toFixed(1) : 0; let rating = 'راسب'; if(pct >= 85) rating = 'ممتاز';
+            else if(pct >= 75) rating = 'جيد جداً'; else if(pct >= 65) rating = 'جيد';
+            else if(pct >= 50) rating = 'مقبول'; this.data.push({ id, name, grades, total, max, pct, rating }); } this.buildIndex(); this.updateRankings(); this.saveData();
+            this.renderTable(); this.tab('tab-data'); this.autoSync(this.data); this.msg('تم توليد ومزامنة الطلاب.', 'var(--success)', '🧪'); }); },
+            
+            edit(idx) { const student = this.data[idx];
+            document.getElementById('sId').value = student.id; document.getElementById('sName').value = student.name; this.settings.subjects.forEach(sub => { const el = document.getElementById(`sub_${sub.id}`); if(el) { el.value = student.grades[sub.id] || 0; } });
+            this.updateLivePreview(); this.saveDraft(); this.msg('تعديل طالب.', 'var(--gold-bright)', '✏️'); document.getElementById('sId').focus(); window.scrollTo({top: 0, behavior: 'smooth'}); },
+            
+            saveRecord() { const idInput = document.getElementById('sId');
+            const nameInput = document.getElementById('sName'); const id = idInput ? idInput.value.trim() : ''; const name = nameInput ? nameInput.value.trim() : '';
+            if(!id || !name) { if(!id && idInput) idInput.classList.add('input-error'); if(!name && nameInput) nameInput.classList.add('input-error');
+            setTimeout(() => { if(idInput) idInput.classList.remove('input-error'); if(nameInput) nameInput.classList.remove('input-error'); }, 1000); return this.msg('البيانات الأساسية مطلوبة!', 'var(--danger)', '⚠️'); } let grades = {};
+            let total = 0; this.settings.subjects.forEach(sub => { const el = document.getElementById(`sub_${sub.id}`); let val = el ? (Number(el.value) || 0) : 0; if (val < 0) val = 0; if (val > sub.max) val = sub.max; grades[sub.id] = val; total += val; });
+            const max = this.getTotalMaxScore(); const pct = max > 0 ? ((total / max) * 100).toFixed(1) : 0;
+            let rating = 'راسب'; if(pct >= 85) rating = 'ممتاز'; else if(pct >= 75) rating = 'جيد جداً';
+            else if(pct >= 65) rating = 'جيد'; else if(pct >= 50) rating = 'مقبول';
+            const record = { id, name, grades, total, max, pct, rating }; const exIdx = this.data.findIndex(x => x.id === id);
+            if(exIdx > -1) { this.data[exIdx] = record; this.msg('تم التحديث.', 'var(--success)', '💾'); } else { this.data.push(record); this.msg('تم الحفظ.', 'var(--success)', '💾');
+            } this.buildIndex(); this.updateRankings(); this.saveData(); this.renderTable(); this.autoSync(this.data); this.clearDraft(); if(idInput) idInput.value = ''; if(nameInput) nameInput.value = '';
+            this.settings.subjects.forEach(sub => { const el = document.getElementById(`sub_${sub.id}`); if(el) el.value = ''; }); this.updateLivePreview(); if(idInput) idInput.focus(); },
+            
+            updateRankings() { this.data.sort((a, b) => b.total - a.total);
+            this.data.forEach((student, index) => { student.rank = index + 1; }); this.updateAnalytics(); this.updateReadyIndicator(); },
+            
+            updateAnalytics() { const total = this.data.length;
+            let passed = 0; let sumScore = 0; this.data.forEach(s => { if(s.pct >= 50) passed++; sumScore += s.total; });
+            document.getElementById('statTotal').innerText = total; document.getElementById('statPass').innerText = total > 0 ? Math.round((passed/total)*100) + '%' : '0%'; document.getElementById('statAvg').innerText = total > 0 ?
+            Math.round(sumScore/total) : '0'; },
+            
             del(idx) { this.showConfirm('حذف', 'تأكيد الحذف؟', '🗑️', 'احذف', 'btn-danger', () => { this.data.splice(idx,1); this.buildIndex(); this.updateRankings(); this.saveData(); this.renderTable(); this.autoSync(this.data); this.msg('تم الحذف.', 'var(--success)', '✅'); }); },
-            renderTable() { document.getElementById('dataTableBody').innerHTML = this.data.map((d, i) => { let rankHtml = `<span>${d.rank}</span>`; if(d.rank === 1) rankHtml = `<span class="rank-badge" style="background:var(--rank-1); color:#000;">الأول 🥇</span>`; else if(d.rank === 2) rankHtml = `<span class="rank-badge" style="background:var(--rank-2); color:#000;">الثاني 🥈</span>`; else if(d.rank === 3) rankHtml = `<span class="rank-badge" style="background:var(--rank-3); color:#000;">الثالث 🥉</span>`; return `<tr><td>${rankHtml}</td><td>${d.id}</td><td>${d.name}</td><td style="color:var(--gold-bright); font-weight:bold;">${d.total}</td><td dir="ltr">%${d.pct}</td><td style="color:${d.pct >= 50 ? 'var(--success)' : 'var(--danger)'}; font-weight:bold;">${d.rating}</td><td><button class="btn-prime btn-gold" style="padding: 6px 12px; font-size:12px; margin-bottom: 3px;" onclick="sys.edit(${i})">تعديل ✏️</button><button class="btn-prime btn-danger" style="padding: 6px 12px; font-size:12px;" onclick="sys.del(${i})">حذف 🗑️</button></td></tr>`; }).join(''); },
-            toggleLock() { this.settings.locked = !this.settings.locked; this.saveSet(); this.autoSync(this.data); this.updateLockUI(); },
-            updateLockUI() { const s = document.getElementById('systemLockScreen'); const l = document.getElementById('lockStatus'); if(this.settings.locked) { s.style.display = 'flex'; l.innerText = 'مغلق (Lockdown) 🔒'; l.style.color = 'var(--danger)'; } else { s.style.display = 'none'; l.innerText = 'مفتوح للعامة ✅'; l.style.color = 'var(--success)'; } },
+            
+            renderTable() { document.getElementById('dataTableBody').innerHTML = this.data.map((d, i) => { let rankHtml = `<span>${d.rank}</span>`; if(d.rank === 1) rankHtml = `<span class="rank-badge" style="background:var(--rank-1); color:#000;">الأول 🥇</span>`; else if(d.rank === 2) rankHtml = `<span class="rank-badge" style="background:var(--rank-2); color:#000;">الثاني 🥈</span>`; else if(d.rank === 3) rankHtml = `<span class="rank-badge" style="background:var(--rank-3); color:#000;">الثالث 🥉</span>`; return `<tr><td>${rankHtml}</td><td>${d.id}</td><td>${d.name}</td><td style="color:var(--gold-bright); font-weight:bold;">${d.total}</td><td dir="ltr">%${d.pct}</td><td style="color:${d.pct >= 50 ? 'var(--success)' : 'var(--danger)'}; font-weight:bold;">${d.rating}</td><td><button class="btn-prime btn-gold" style="padding: 6px 12px; font-size:12px; margin-bottom: 3px;" onclick="sys.edit(${i})">تعديل ✏️</button><button class="btn-prime btn-danger" style="padding: 6px 12px; font-size:12px;" onclick="sys.del(${i})">حذف 🗑️</button></td></tr>`;
+            }).join(''); },
+            
+            toggleLock() { this.settings.locked = !this.settings.locked; this.saveSet(); this.autoSync(this.data);
+            this.updateLockUI(); },
+            updateLockUI() { const s = document.getElementById('systemLockScreen');
+            const l = document.getElementById('lockStatus'); if(this.settings.locked) { s.style.display = 'flex'; l.innerText = 'مغلق (Lockdown) 🔒'; l.style.color = 'var(--danger)';
+            } else { s.style.display = 'none'; l.innerText = 'مفتوح للعامة ✅'; l.style.color = 'var(--success)'; } },
             saveSet() { try { localStorage.setItem('sov_settings', JSON.stringify(this.settings)); } catch(e){} },
             saveData() { try { localStorage.setItem('sov_data', JSON.stringify(this.data)); localStorage.setItem('sov_data_backup', JSON.stringify(this.data)); } catch(e) {} },
-            getRing(label, value, maxVal) { const pct = Math.round(( (value || 0) / (maxVal || 100)) * 100); const offset = 283 - (283 * pct) / 100; const color = pct >= 50 ? 'var(--primary-glow)' : 'var(--danger)'; const uId = 'ring_' + Math.random().toString(36).substr(2, 9); setTimeout(() => { const el = document.getElementById(uId); if(el) el.style.strokeDashoffset = offset; }, 100); return `<div class="progress-ring"><svg><circle class="ring-bg" cx="55" cy="55" r="45"></circle><circle id="${uId}" class="ring-fill" cx="55" cy="55" r="45" style="stroke:${color};"></circle></svg><div class="ring-text">${value||0}</div><div class="ring-label">${label}</div></div>`; },
+            
+            getRing(label, value, maxVal) { const pct = Math.round(( (value || 0) / (maxVal || 100)) * 100);
+            const offset = 283 - (283 * pct) / 100; const color = pct >= 50 ? 'var(--primary-glow)' : 'var(--danger)';
+            const uId = 'ring_' + Math.random().toString(36).substr(2, 9); setTimeout(() => { const el = document.getElementById(uId); if(el) el.style.strokeDashoffset = offset; }, 100);
+            return `<div class="progress-ring"><svg><circle class="ring-bg" cx="55" cy="55" r="45"></circle><circle id="${uId}" class="ring-fill" cx="55" cy="55" r="45" style="stroke:${color};"></circle></svg><div class="ring-text">${value||0}</div><div class="ring-label">${label}</div></div>`;
+            },
+            
             printCert(id) {
                 const s = this.dataIndex.get(id.toString()) || this.data.find(x => x.id.toString() === id.toString()); const logo = this.settings.logo || 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Eagle_of_Saladin.svg/200px-Eagle_of_Saladin.svg.png'; const inst = this.settings.inst;
-                const isPassing = s.pct >= 50; const motivationTitle = isPassing ? "تهنئة وتبريكات بالنجاح والتفوق" : "رسالة دعم وتشجيع"; const motivationText = isPassing ? "نجاحك هو ثمرة اجتهادك المخلص. واصل طريق التميز والمجد بخطى واثقة!" : "التعثر هو محطة للنهوض والانطلاق بقوة أكبر. نحن نثق بقدرتك على تجاوز التحدي والنجاح."; const motivationColor = isPassing ? "var(--success)" : "var(--danger)";
+                const isPassing = s.pct >= 50; const motivationTitle = isPassing ? "تهنئة وتبريكات بالنجاح والتفوق" : "رسالة دعم وتشجيع";
+                const motivationText = isPassing ? "نجاحك هو ثمرة اجتهادك المخلص. واصل طريق التميز والمجد بخطى واثقة!" : "التعثر هو محطة للنهوض والانطلاق بقوة أكبر. نحن نثق بقدرتك على تجاوز التحدي والنجاح."; const motivationColor = isPassing ? "var(--success)" : "var(--danger)";
                 const ths = this.settings.subjects.map(sub => `<th>${sub.name} <br><small style="color:#64748b;">(${sub.max})</small></th>`).join(''); const tds = this.settings.subjects.map(sub => `<td>${s.grades[sub.id] || 0}</td>`).join('');
-                let rankBadge = s.rank; if(s.rank === 1) rankBadge = "المركز الأول 🥇"; else if(s.rank === 2) rankBadge = "المركز الثاني 🥈"; else if(s.rank === 3) rankBadge = "المركز الثالث 🥉";
+                let rankBadge = s.rank; if(s.rank === 1) rankBadge = "المركز الأول 🥇";
+                else if(s.rank === 2) rankBadge = "المركز الثاني 🥈"; else if(s.rank === 3) rankBadge = "المركز الثالث 🥉";
                 const docId = 'SOV-' + new Date().getFullYear() + '-' + s.id + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
                 
                 let sigHtml = '';
