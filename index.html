@@ -549,7 +549,7 @@
     </div>
 
     <script>
-        // الرابط الجديد الذي سيتم اعتماده بشكل مطلق وقاطع
+        // هنا يتم فرض الرابط الجديد الخاص بك كمرجع نهائي وحيد (تجاهل أي روابط قديمة محفوظة)
         window.GLOBAL_SHEET_URL = "https://script.google.com/macros/s/AKfycbw35a0GX5WrbchrC1eDvY2ZBvjHkrDCS2tw5lsDGESVdsOT2qrPF3bIh-4E5fmlE0lk/exec";
         
         const sys = {
@@ -557,8 +557,12 @@
             dataIndex: new Map(),
             settings: {},
             syncTimeout: null,
+            isFetchingData: true, // لتتبع حالة التحميل وإشعار الطالب
             
             init() {
+                const statusInd = document.getElementById('dbStatusIndicator');
+                if(statusInd) statusInd.innerHTML = '⏳ جاري تهيئة النظام والاتصال...';
+
                 let savedSettings = {};
                 try { 
                     const stored = localStorage.getItem('sov_settings');
@@ -580,7 +584,7 @@
                     signature: savedSettings.signature || '', 
                     pass: savedSettings.pass || 'Mahmoud',
                     
-                    // هنا قمت بفرض الرابط الجديد بقوة لمسح أي رابط قديم تالف من الذاكرة
+                    // مسح أي رابط قديم وتثبيت الرابط الجديد بالقوة
                     sheetUrl: window.GLOBAL_SHEET_URL,
                     
                     inst: (savedSettings.inst && savedSettings.inst.gov) ? savedSettings.inst : defaultInst,
@@ -594,8 +598,7 @@
                     ]
                 };
                 
-                // تأكيد إضافي لحقن الرابط الصحيح
-                this.settings.sheetUrl = window.GLOBAL_SHEET_URL;
+                this.settings.sheetUrl = window.GLOBAL_SHEET_URL; // تأكيد إضافي
                 this.saveSet();
                 this.fillInputs();
 
@@ -623,9 +626,9 @@
                 const searchBtn = document.getElementById('displaySearchBtn');
                 const statusInd = document.getElementById('dbStatusIndicator');
                 const ind = document.getElementById('syncIndicator');
+                this.isFetchingData = true;
 
                 try {
-                    // الاعتماد المطلق على المتغير الثابت لحماية النظام من أي روابط تالفة
                     let url = window.GLOBAL_SHEET_URL;
                     
                     if(ind) { ind.innerText = 'جاري السحب والمطابقة... ⏳'; ind.style.color = 'var(--gold-bright)'; }
@@ -664,7 +667,6 @@
                                 let k = keys[i];
                                 if(cloudSettings[k] !== undefined) this.settings[k] = cloudSettings[k];
                             }
-                            // حماية الرابط من التغيير حتى لو جاء من السحابة
                             this.settings.sheetUrl = window.GLOBAL_SHEET_URL;
                             this.saveSet();
                             this.updateUI(); 
@@ -692,6 +694,7 @@
                     this.fallbackToLocal();
                     if(showMsg) this.msg('تعذر الاتصال بالسيرفر، تم تحميل أخر نسخة متوفرة.', 'var(--danger)');
                 } finally {
+                    this.isFetchingData = false;
                     if(searchBtn) { 
                         let btnText = (this.settings.titles && this.settings.titles.searchBtnText) ? this.settings.titles.searchBtnText : 'عرض الوثيقة المعتمدة';
                         searchBtn.innerHTML = `🔍 ${btnText}`; 
@@ -735,7 +738,6 @@
             },
 
             async autoSync(payload) {
-                // فرض الرابط الجديد بالقوة أثناء عملية الإرسال لضمان عدم الفشل
                 let url = window.GLOBAL_SHEET_URL; 
                 if(!url) return;
                 
@@ -743,7 +745,6 @@
                 if(ind) { ind.innerText = 'جاري الإرسال للسحابة... ⏳'; ind.style.color = 'var(--gold-bright)'; }
                 
                 try {
-                    // استخدام بروتوكول no-cors مع text/plain لتخطي جدار حماية جوجل بنجاح
                     fetch(url, {
                         method: 'POST', mode: 'no-cors', 
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -758,17 +759,30 @@
 
             search() {
                 if(this.settings.locked) return this.msg('النظام قيد المراجعة الفنية.', 'var(--danger)', '🔒');
+                
                 const qInput = document.getElementById('studentSearch');
                 if (!qInput) return;
                 const q = qInput.value.trim();
+                
                 if(!q) return this.msg('يرجى إدخال رقم الجلوس أو الاسم.', 'var(--primary-glow)', '🔍');
+
+                const r = document.getElementById('quickResult');
+
+                // حماية وتوجيه ذكي: إذا كان النظام ما زال يحمل أو لا يوجد طلاب إطلاقاً
+                if (this.data.length === 0) {
+                    if (this.isFetchingData) {
+                        r.innerHTML = '<div style="background:rgba(251, 191, 36, 0.1); padding:20px; border-radius:12px; margin-top:25px; border:1px solid rgba(251, 191, 36, 0.3);"><h3 style="color:var(--gold-bright);">⚠️ النظام لا يزال يجلب البيانات من السيرفر... يرجى الانتظار بضع ثواني والمحاولة.</h3></div>';
+                    } else {
+                        r.innerHTML = '<div style="background:rgba(239,68,68,0.1); padding:20px; border-radius:12px; margin-top:25px; border:1px solid rgba(239,68,68,0.3);"><h3 style="color:var(--danger);">عذراً، لا يوجد بيانات طلاب مسجلة في النظام حتى الآن.</h3></div>';
+                    }
+                    return;
+                }
                 
                 let s = this.dataIndex.get(q.toString());
                 if (!s) {
                     s = this.data.find(x => (x.name && x.name.indexOf(q) !== -1) || (x.id && x.id.toString() === q.toString()));
                 }
 
-                const r = document.getElementById('quickResult');
                 if(!s) return r.innerHTML = '<div style="background:rgba(239,68,68,0.1); padding:20px; border-radius:12px; margin-top:25px; border:1px solid rgba(239,68,68,0.3);"><h3 style="color:var(--danger);">عذراً، النتيجة غير موجودة بالأنظمة.</h3></div>';
                 
                 const rings = this.settings.subjects.map(sub => this.getRing(sub.name, s.grades[sub.id], sub.max)).join('');
@@ -777,10 +791,7 @@
 
             fillInputs() {
                 if(!this.settings) return;
-                const sUrl = document.getElementById('sheetUrl'); 
-                // تحديث حقل الإدخال ليعرض الرابط الصحيح الجديد للعميل دائماً
-                if(sUrl) sUrl.value = window.GLOBAL_SHEET_URL; 
-                
+                const sUrl = document.getElementById('sheetUrl'); if(sUrl) sUrl.value = window.GLOBAL_SHEET_URL; 
                 if(this.settings.inst) {
                     const elGov = document.getElementById('iGov'); if(elGov) elGov.value = this.settings.inst.gov || '';
                     const elDir = document.getElementById('iDir'); if(elDir) elDir.value = this.settings.inst.dir || '';
@@ -844,8 +855,7 @@
                 this.settings.inst = { gov: document.getElementById('iGov').value, dir: document.getElementById('iDir').value, adm: document.getElementById('iAdm').value, sch: document.getElementById('iSch').value, yea: document.getElementById('iYea').value, manager: document.getElementById('iManager').value };
                 this.settings.titles.main = document.getElementById('mTitle').value || 'بوابة السيادة للنتائج'; this.settings.titles.sub = document.getElementById('mSub').value || 'Sovereign Cloud Data Center'; this.settings.titles.searchMain = document.getElementById('mSearchMain').value || 'الاستعلام الرقمي الشامل'; this.settings.titles.searchSub = document.getElementById('mSearchSub').value || 'Smart Student Retrieval & Ranking'; this.settings.titles.searchPlaceholder = document.getElementById('mSearchPlaceholder').value || 'أدخل رقم الجلوس أو اسم الطالب...'; this.settings.titles.searchBtnText = document.getElementById('mSearchBtnText').value || 'عرض الوثيقة المعتمدة'; this.settings.titles.loginMain = document.getElementById('mLoginMain').value || 'المصادقة السيادية';
                 this.settings.titles.dashMain = document.getElementById('mDashMain').value || 'إدارة النتائج والبيانات'; 
-                // حماية الرابط من التغيير
-                this.settings.sheetUrl = window.GLOBAL_SHEET_URL;
+                this.settings.sheetUrl = window.GLOBAL_SHEET_URL; // حماية الرابط
                 this.saveSet(); this.updateUI();
             },
 
@@ -1003,7 +1013,13 @@
             }
         };
 
-        window.onload = () => sys.init();
+        // الحل الجذري: بدء النظام فوراً دون انتظار أي ملفات خارجية تعيق الإقلاع
+        document.addEventListener('DOMContentLoaded', () => {
+            sys.init();
+        });
+        if (document.readyState === "complete" || document.readyState === "interactive") {
+            setTimeout(() => sys.init(), 100);
+        }
     </script>
 </body>
 </html>
