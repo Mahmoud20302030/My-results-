@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -426,7 +426,7 @@
                             <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">الربط يعمل تلقائياً عند وضع الرابط، ولا يحتاج لأي كود إضافي عند الرفع على استضافة.</p>
                             <input type="text" id="sheetUrl" placeholder="https://script.google.com/macros/s/.../exec" oninput="sys.saveInst()">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-wrap: wrap; gap:10px;">
-                                <span id="syncIndicator" style="font-size: 14px;"></span>
+                                <span id="syncIndicator" style="font-size: 14px; font-weight: bold;"></span>
                                 <button class="btn-prime btn-gold" onclick="sys.forceSync()">🔄 إرسال نسخة للسحابة الآن</button>
                             </div>
                         </div>
@@ -644,7 +644,7 @@
                 this.updateAnalytics();
 
                 // ---------------------------------------------------------
-                // Deep Auto-Save Handlers (ما لا تراه لحفظ البيانات للأبد)
+                // Deep Auto-Save Handlers
                 // ---------------------------------------------------------
                 window.addEventListener('beforeunload', () => {
                     this.saveData();
@@ -655,7 +655,7 @@
                 setInterval(() => {
                     this.saveData();
                     this.saveSet();
-                }, 5000); // حفظ تلقائي في الخلفية كل 5 ثوانٍ
+                }, 5000); 
             },
 
             msg(text, color = "var(--primary-glow)", icon = "ℹ️") {
@@ -703,35 +703,26 @@
                 window.scrollTo({top:0, behavior:'smooth'});
             },
 
-            // -------------------------------------------------------------
-            // Dashboard Tabs Engine (FIXED AND ROBUST)
-            // -------------------------------------------------------------
             tab(id) {
-                // 1. Hide all tabs and remove animations
                 document.querySelectorAll('.admin-tab').forEach(e => {
                     e.classList.remove('active-tab');
                     e.style.display = 'none';
                 });
                 
-                // 2. Remove 'active' class from all sidebar items
                 document.querySelectorAll('.sidebar-item').forEach(e => e.classList.remove('active'));
                 
-                // 3. Show target tab with animation
                 const targetTab = document.getElementById(id);
                 if(targetTab) {
                     targetTab.style.display = 'block';
-                    // Trigger reflow to restart CSS animation
                     void targetTab.offsetWidth; 
                     targetTab.classList.add('active-tab');
                 }
                 
-                // 4. Highlight the correct sidebar item
                 const sideItem = document.querySelector(`.sidebar-item[data-target="${id}"]`);
                 if(sideItem) {
                     sideItem.classList.add('active');
                 }
 
-                // 5. Save the state in Session Storage
                 sessionStorage.setItem('sov_active_tab', id);
             },
 
@@ -742,7 +733,6 @@
                     this.msg('تم التحقق بنجاح. مرحباً بك.', 'var(--success)', '🔓');
                     document.getElementById('adminPass').value = '';
                     
-                    // Restore the last visited tab or default to 'tab-data'
                     const savedTab = sessionStorage.getItem('sov_active_tab') || 'tab-data';
                     this.tab(savedTab);
                 } else { 
@@ -750,9 +740,6 @@
                 }
             },
 
-            // -------------------------------------------------------------
-            // Draft Recovery Engine (استعادة مسودة إدخال الطالب)
-            // -------------------------------------------------------------
             saveDraft() {
                 const idInput = document.getElementById('sId');
                 const nameInput = document.getElementById('sName');
@@ -797,7 +784,10 @@
                 localStorage.removeItem('sov_draft');
             },
 
+            // --- التعديل هنا: التعرف التلقائي على الرابط وإرسال جميع البيانات فوراً ---
             saveInst() {
+                const oldUrl = this.settings.sheetUrl;
+                
                 this.settings.inst = { 
                     gov: document.getElementById('iGov').value, 
                     dir: document.getElementById('iDir').value, 
@@ -820,6 +810,14 @@
                 
                 this.saveSet(); 
                 this.updateUI();
+
+                // التفعيل التلقائي عند لصق الرابط الجديد
+                if (this.settings.sheetUrl && this.settings.sheetUrl !== oldUrl && this.settings.sheetUrl.includes('script.google.com')) {
+                    if (this.data && this.data.length > 0) {
+                        this.msg('تم كشف رابط سحابي جديد، جاري مزامنة جميع البيانات تلقائياً...', 'var(--primary-glow)', '☁️');
+                        this.forceSync();
+                    }
+                }
             },
 
             updateUI() {
@@ -834,8 +832,11 @@
                 const dm = document.getElementById('displayDashTitle'); if(dm) dm.innerText = this.settings.titles.dashMain;
 
                 const url = this.settings.sheetUrl;
-                document.getElementById('syncIndicator').innerText = url ? 'الربط السحابي: جاهز ✓' : 'الربط السحابي: في انتظار الرابط...';
-                document.getElementById('syncIndicator').style.color = url ? 'var(--success)' : '#94a3b8';
+                const ind = document.getElementById('syncIndicator');
+                if(ind) {
+                    ind.innerText = url ? 'الربط السحابي: جاهز ✓' : 'الربط السحابي: في انتظار الرابط...';
+                    ind.style.color = url ? 'var(--success)' : '#94a3b8';
+                }
             },
 
             updatePassword() {
@@ -946,6 +947,7 @@
                         this.saveData();
                         this.recalculateAllStudents();
                         this.renderDynamicSubjects();
+                        this.autoSync(this.data); // إرسال التحديث الشامل
                         this.msg(`تم تطبيق ${decreeName} بنجاح.`, 'var(--success)', '✅');
                     }
                 );
@@ -1004,6 +1006,7 @@
                 this.saveSet();
                 this.recalculateAllStudents();
                 this.renderDynamicSubjects();
+                this.autoSync(this.data); // إرسال التحديث الشامل
                 this.msg(`تم إضافة مادة ${name}`, 'var(--success)', '📚');
             },
 
@@ -1027,6 +1030,7 @@
                         this.saveSet();
                         this.recalculateAllStudents();
                         this.renderDynamicSubjects();
+                        this.autoSync(this.data); // إرسال التحديث الشامل
                         this.msg('تم الحذف وإعادة الحساب بنجاح.', 'var(--success)');
                     }
                 );
@@ -1054,21 +1058,38 @@
                 this.renderTable();
             },
 
+            // --- التعديل هنا: تحسين كود الإرسال وتفادي أخطاء الـ CORS ---
             async autoSync(payload) {
-                if(!this.settings.sheetUrl) return;
+                if(!this.settings.sheetUrl || !this.settings.sheetUrl.includes("script.google.com")) return;
                 try {
+                    const ind = document.getElementById('syncIndicator');
+                    if(ind) {
+                        ind.innerText = 'جاري المزامنة مع السحابة... ⏳';
+                        ind.style.color = 'var(--gold-bright)';
+                    }
+                    
+                    // استخدام text/plain لضمان تخطي فحص الأمان وإرسال كامل الداتا
                     fetch(this.settings.sheetUrl, {
-                        method: 'POST', mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ source: "SovereignSystem", timestamp: new Date(), data: payload })
+                        method: 'POST', 
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ source: "SovereignSystem", timestamp: new Date().toISOString(), data: payload })
+                    }).then(() => {
+                        if(ind) {
+                            ind.innerText = 'تمت المزامنة بنجاح ✓ (' + new Date().toLocaleTimeString('ar-EG') + ')';
+                            ind.style.color = 'var(--success)';
+                        }
+                    }).catch((e) => {
+                        if(ind) {
+                            ind.innerText = 'خطأ في الاتصال بالسحابة ❌';
+                            ind.style.color = 'var(--danger)';
+                        }
                     });
-                    this.msg('تمت المزامنة مع السحابة صمتاً ✓', 'var(--success)', '☁️');
                 } catch(e) { console.warn("Sync failed", e); }
             },
 
             forceSync() {
                 if(!this.settings.sheetUrl) return this.msg('يرجى إدخال الرابط أولاً!', 'var(--danger)');
-                this.msg('جاري إرسال حزمة المزامنة...', 'var(--info)', '☁️');
                 this.autoSync(this.data); 
             },
 
@@ -1131,9 +1152,9 @@
                     this.updateRankings();
                     this.saveData();
                     this.renderTable();
-                    this.autoSync(this.data);
+                    this.autoSync(this.data); // إرسال جميع البيانات فوراً بعد الاستيراد
                     document.getElementById('importExcel').value = '';
-                    this.msg(`تم استيراد ${importedCount} طالب بنجاح.`, 'var(--success)', '📊');
+                    this.msg(`تم استيراد ومزامنة ${importedCount} طالب بنجاح.`, 'var(--success)', '📊');
                 };
                 reader.readAsArrayBuffer(file);
             },
@@ -1154,6 +1175,7 @@
                         this.saveData();
                         this.renderTable();
                         this.updateAnalytics();
+                        this.autoSync(this.data); // مزامنة التصفير ليمسح بيانات جوجل شيت أيضاً
                         this.msg('تم تصفير قاعدة البيانات بنجاح. النظام جاهز.', 'var(--success)', '🗑️');
                     }
                 );
@@ -1209,7 +1231,8 @@
                         this.saveData();
                         this.renderTable();
                         this.tab('tab-data'); 
-                        this.msg('تم توليد 50 طالب بنجاح.', 'var(--success)', '🧪');
+                        this.autoSync(this.data); // إرسال جميع الطلاب الوهميين للسحابة
+                        this.msg('تم توليد ومزامنة 50 طالب بنجاح.', 'var(--success)', '🧪');
                     }
                 );
             },
@@ -1225,13 +1248,14 @@
                 });
                 
                 this.updateLivePreview();
-                this.saveDraft(); // حفظ الحالة للمسودة تحسباً
+                this.saveDraft(); 
                 this.msg('تم جلب بيانات الطالب للتعديل.', 'var(--gold-bright)', '✏️');
                 
                 document.getElementById('sId').focus();
                 window.scrollTo({top: 0, behavior: 'smooth'});
             },
 
+            // --- التعديل هنا: إرسال (البيانات كاملة) بدلاً من سجل واحد فقط ---
             saveRecord() {
                 const idInput = document.getElementById('sId');
                 const nameInput = document.getElementById('sName');
@@ -1254,7 +1278,7 @@
                     const el = document.getElementById(`sub_${sub.id}`);
                     let val = el ? (Number(el.value) || 0) : 0;
                     if (val < 0) val = 0; 
-                    if (val > sub.max) val = sub.max; // Clamp protection
+                    if (val > sub.max) val = sub.max; 
                     grades[sub.id] = val;
                     total += val;
                 });
@@ -1278,8 +1302,11 @@
                 this.updateRankings(); 
                 this.saveData(); 
                 this.renderTable(); 
-                this.autoSync([record]); 
-                this.clearDraft(); // مسح المسودة بعد نجاح الحفظ
+                
+                // الحل الجذري: إرسال جميع الطلاب (this.data) وليس فقط [record] لضمان عدم مسح باقي الأسماء
+                this.autoSync(this.data); 
+                
+                this.clearDraft(); 
                 
                 if(idInput) idInput.value = ''; 
                 if(nameInput) nameInput.value = '';
@@ -1311,6 +1338,7 @@
                 document.getElementById('statAvg').innerText = total > 0 ? Math.round(sumScore/total) : '0';
             },
 
+            // --- التعديل هنا: مزامنة الحذف مع السحابة ---
             del(idx) { 
                 this.showConfirm(
                     'حذف سجل الطالب',
@@ -1323,13 +1351,13 @@
                         this.updateRankings(); 
                         this.saveData(); 
                         this.renderTable();
+                        this.autoSync(this.data); // إرسال الداتا بعد الحذف ليتطابق مع الشيت
                         this.msg('تم حذف الطالب بنجاح.', 'var(--success)', '✅');
                     }
                 );
             },
 
             renderTable() {
-                // Using join avoids multiple DOM reflows
                 document.getElementById('dataTableBody').innerHTML = this.data.map((d, i) => {
                     let rankHtml = `<span>${d.rank}</span>`;
                     if(d.rank === 1) rankHtml = `<span class="rank-badge" style="background:var(--rank-1); color:#000;">الأول 🥇</span>`;
@@ -1358,7 +1386,6 @@
             
             saveData() { 
                 localStorage.setItem('sov_data', JSON.stringify(this.data)); 
-                // Shadow Backup implementation (Invisible recovery layer)
                 localStorage.setItem('sov_data_backup', JSON.stringify(this.data));
             },
 
@@ -1527,4 +1554,3 @@
     </script>
 </body>
 </html>
-
